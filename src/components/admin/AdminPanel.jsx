@@ -335,8 +335,6 @@ export default function AdminPanel({ customers, setCustomers, exams, setExams, o
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[290px] flex-col border-r border-slate-200 bg-slate-950 p-5 text-white lg:flex">
         <LogoMark dark />
         <div className="relative mt-8 min-h-0 flex-1">
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-6 rounded-t-3xl bg-gradient-to-b from-slate-950 via-slate-950/85 to-transparent" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-6 rounded-b-3xl bg-gradient-to-t from-slate-950 via-slate-950/85 to-transparent" />
           <div className="admin-side-scroll h-full overflow-y-auto pr-2 pb-6">
             <div className="grid gap-2 rounded-[1.6rem] bg-white/[0.03] p-1">
               {visibleTabs.map((tab) => (
@@ -345,7 +343,7 @@ export default function AdminPanel({ customers, setCustomers, exams, setExams, o
                   onClick={() => setActiveTab(tab.id)}
                   className={`sidebar-menu-button relative flex h-[52px] min-h-[52px] w-full items-center gap-3 overflow-visible rounded-2xl px-4 py-0 text-left text-sm font-black !leading-none transition ${
                     activeTab === tab.id
-                      ? "bg-blue-700 text-white shadow-[0_12px_35px_rgba(37,99,235,0.35)]"
+                      ? "bg-blue-700 text-white"
                       : "text-slate-300 hover:bg-white/10 hover:text-white"
                   }`}
                 >

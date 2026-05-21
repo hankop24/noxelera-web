@@ -39,3 +39,9 @@ body {
   transform: translateY(3px) !important;
   padding: 0 !important;
 }
+
+
+/* Sidebar shadow overlay removed */
+.sidebar-menu-button {
+  box-shadow: none !important;
+}
