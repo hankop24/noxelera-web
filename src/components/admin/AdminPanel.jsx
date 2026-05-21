@@ -343,16 +343,16 @@ export default function AdminPanel({ customers, setCustomers, exams, setExams, o
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`sidebar-menu-button flex h-12 min-h-12 w-full items-center gap-3 overflow-visible rounded-2xl px-4 py-0 text-left text-sm font-black leading-normal transition ${
+                  className={`sidebar-menu-button relative flex h-[52px] min-h-[52px] w-full items-center gap-3 overflow-visible rounded-2xl px-4 py-0 text-left text-sm font-black !leading-none transition ${
                     activeTab === tab.id
                       ? "bg-blue-700 text-white shadow-[0_12px_35px_rgba(37,99,235,0.35)]"
                       : "text-slate-300 hover:bg-white/10 hover:text-white"
                   }`}
                 >
-                  <span className="sidebar-menu-icon flex h-5 w-5 shrink-0 items-center justify-center overflow-visible leading-normal">
+                  <span className="sidebar-menu-icon relative top-[1px] flex h-5 w-5 shrink-0 items-center justify-center overflow-visible !leading-none">
                     {tab.icon}
                   </span>
-                  <span className="sidebar-menu-label block translate-y-[1px] overflow-visible leading-[1.35]">
+                  <span className="sidebar-menu-label relative top-[3px] flex h-5 items-center overflow-visible whitespace-nowrap !leading-none">
                     {tab.label}
                   </span>
                 </button>

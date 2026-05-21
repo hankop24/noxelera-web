@@ -10,24 +10,32 @@ body {
   margin: 0;
 }
 
-/* Sidebar menu vertical alignment fix */
+/* Noxelera sidebar: force vertical centering in Chrome/Windows */
 .sidebar-menu-button {
-  height: 48px !important;
-  min-height: 48px !important;
+  height: 52px !important;
+  min-height: 52px !important;
   display: flex !important;
   align-items: center !important;
   overflow: visible !important;
-  line-height: normal !important;
+  line-height: 1 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
-.sidebar-menu-icon,
-.sidebar-menu-label {
-  display: flex !important;
+.sidebar-menu-icon {
+  display: inline-flex !important;
   align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
   overflow: visible !important;
-  line-height: 1.35 !important;
 }
 
 .sidebar-menu-label {
-  padding-top: 1px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 20px !important;
+  line-height: 20px !important;
+  overflow: visible !important;
+  transform: translateY(3px) !important;
+  padding: 0 !important;
 }
