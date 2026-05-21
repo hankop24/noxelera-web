@@ -387,11 +387,11 @@ export const INITIAL_WAREHOUSE = {
     { id: "shelf-c-1", code: "C-1", name: "C-1 Rafı", qrCode: "RAF-C-1", description: "Yedek ve kampanya ürünleri", status: "Aktif" },
   ],
   stockItems: [
-    { id: 1, type: "Deneme", name: "Apotemi TYT Genel Deneme", brand: "Apotemi", category: "TYT", barcode: "869000000001", qrCode: "QR-APO-TYT-001", shelfId: "shelf-a-1", quantity: 320, minStock: 20, status: "Aktif" },
-    { id: 2, type: "Deneme", name: "Hız ve Renk LGS Deneme", brand: "Hız ve Renk", category: "LGS", barcode: "869000000002", qrCode: "QR-HR-LGS-001", shelfId: "shelf-a-2", quantity: 210, minStock: 20, status: "Aktif" },
+    { id: 1, type: "Deneme", name: "Apotemi TYT Genel Deneme", brand: "Apotemi", category: "TYT", barcode: "", barcodeA: "869000000001-A", barcodeB: "869000000001-B", qrCode: "QR-APO-TYT-001", shelfId: "shelf-a-1", quantity: 320, variants: { "A Sayısal": 100, "A Sözel": 100, "B Sayısal": 100, "B Sözel": 100 }, minStock: 20, status: "Aktif" },
+    { id: 2, type: "Deneme", name: "Hız ve Renk LGS Deneme", brand: "Hız ve Renk", category: "LGS", barcode: "", barcodeA: "869000000002-A", barcodeB: "869000000002-B", qrCode: "QR-HR-LGS-001", shelfId: "shelf-a-2", quantity: 210, variants: { "A Sayısal": 80, "A Sözel": 80, "B Sayısal": 70, "B Sözel": 70 }, minStock: 20, status: "Aktif" },
     { id: 3, type: "Kitap", name: "TYT Matematik Soru Bankası", brand: "Noxelera", category: "TYT", barcode: "869000000003", qrCode: "QR-NOX-TYT-MAT", shelfId: "shelf-b-1", quantity: 95, minStock: 20, status: "Aktif" },
     { id: 4, type: "Kitap", name: "AYT Edebiyat Soru Bankası", brand: "Noxelera", category: "AYT", barcode: "869000000004", qrCode: "QR-NOX-AYT-EDB", shelfId: "shelf-b-1", quantity: 18, minStock: 20, status: "Aktif" },
-    { id: 5, type: "Deneme", name: "Paraf 8. Sınıf LGS Deneme", brand: "Paraf", category: "LGS", barcode: "869000000005", qrCode: "QR-PAR-LGS-001", shelfId: "shelf-a-2", quantity: 72, minStock: 20, status: "Aktif" },
+    { id: 5, type: "Deneme", name: "Paraf 8. Sınıf LGS Deneme", brand: "Paraf", category: "LGS", barcode: "", barcodeA: "869000000005-A", barcodeB: "869000000005-B", qrCode: "QR-PAR-LGS-001", shelfId: "shelf-a-2", quantity: 72, variants: { "A Sayısal": 25, "A Sözel": 25, "B Sayısal": 18, "B Sözel": 18 }, minStock: 20, status: "Aktif" },
   ],
   distributorTasks: [
     { id: 1, title: "Etki Dershanesi teslimatı", orderId: "ORD-1000", distributor: "Dağıtıcı 1", status: "Bekliyor", note: "LGS denemeleri teslim edilecek." },
