@@ -341,16 +341,20 @@ export default function AdminPanel({ customers, setCustomers, exams, setExams, o
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`sidebar-menu-button relative flex h-[52px] min-h-[52px] w-full items-center gap-3 overflow-visible rounded-2xl px-4 py-0 text-left text-sm font-black !leading-none transition ${
+                  className={`sidebar-menu-button group grid h-[54px] min-h-[54px] w-full grid-cols-[28px_1fr] items-center gap-3 rounded-[1.15rem] px-4 py-0 text-sm font-black transition-all duration-200 ${
                     activeTab === tab.id
-                      ? "bg-blue-700 text-white"
-                      : "text-slate-300 hover:bg-white/10 hover:text-white"
+                      ? "bg-gradient-to-r from-blue-700 to-blue-600 text-white ring-1 ring-blue-400/40"
+                      : "text-slate-300 hover:bg-white/[0.08] hover:text-white"
                   }`}
                 >
-                  <span className="sidebar-menu-icon relative top-[1px] flex h-5 w-5 shrink-0 items-center justify-center overflow-visible !leading-none">
+                  <span className={`sidebar-menu-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition ${
+                    activeTab === tab.id
+                      ? "bg-white/15 text-white"
+                      : "bg-white/[0.04] text-slate-300 group-hover:bg-white/[0.08] group-hover:text-white"
+                  }`}>
                     {tab.icon}
                   </span>
-                  <span className="sidebar-menu-label relative top-[3px] flex h-5 items-center overflow-visible whitespace-nowrap !leading-none">
+                  <span className="sidebar-menu-label flex h-full items-center whitespace-nowrap leading-none">
                     {tab.label}
                   </span>
                 </button>
