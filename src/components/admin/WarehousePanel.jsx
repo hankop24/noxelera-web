@@ -431,6 +431,39 @@ function QuickAction({ title, subtitle, icon, tone = "blue", onClick }) {
   );
 }
 
+function MobileMenuCard({ title, subtitle, icon, tone = "blue", badge, onClick }) {
+  const styles = {
+    blue: "bg-blue-50 text-blue-700 ring-blue-100",
+    purple: "bg-violet-50 text-violet-700 ring-violet-100",
+    amber: "bg-amber-50 text-amber-700 ring-amber-100",
+    green: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+    red: "bg-red-50 text-red-700 ring-red-100",
+    slate: "bg-slate-100 text-slate-700 ring-slate-200",
+    indigo: "bg-indigo-50 text-indigo-700 ring-indigo-100",
+    teal: "bg-teal-50 text-teal-700 ring-teal-100",
+  };
+  return (
+    <button
+      onClick={onClick}
+      className="group w-full rounded-[1.35rem] bg-white p-4 text-left shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md"
+    >
+      <div className="flex items-center gap-4">
+        <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ring-1 ${styles[tone] || styles.blue}`}>
+          {icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate text-lg font-black text-slate-950">{title}</p>
+            {badge && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-600 ring-1 ring-slate-200">{badge}</span>}
+          </div>
+          <p className="mt-1 text-sm font-bold leading-5 text-slate-500">{subtitle}</p>
+        </div>
+        <ChevronRight className="shrink-0 text-slate-300 transition group-hover:translate-x-1 group-hover:text-blue-600" size={24} />
+      </div>
+    </button>
+  );
+}
+
 function Modal({ title, subtitle, onClose, children, wide = false }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4 backdrop-blur-sm">
@@ -884,49 +917,79 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
   const visibleClassExams = filteredExams.filter((exam) => exam.group === examGroup && exam.classLevel === selectedClass);
   const visibleClassBooks = warehouse.stockBooks.filter((book) => book.group === bookGroup && book.classLevel === selectedBookClass && `${book.name} ${book.barcode} ${book.shelf}`.toLowerCase().includes(query.toLowerCase()));
 
-  const renderDashboard = () => (
-    <div className="grid gap-6">
-      <Header title="Depo Uygulaması" subtitle={`Stok, raf, sipariş ve operasyon ekranı • ${roleLabel} modu • ${connectedStaffCount} yetkili`} icon={<Warehouse size={26} />} actions={<button onClick={() => setModal({ type: "notifications" })} className="rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 ring-1 ring-blue-100">Bildirimler</button>} />
-      <div className="rounded-[2rem] bg-gradient-to-br from-blue-700 to-indigo-700 p-6 text-white shadow-xl">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15"><Package size={30} /></div>
-            <h3 className="text-3xl font-black">Depo App iş akışı Noxelera Web içinde birebir mantıkla çalışır.</h3>
-            <p className="mt-3 text-sm font-bold leading-7 text-blue-100">Deneme kitapçıkları, ortaokul sayısal/sözel setleri, raf QR, sipariş hazırlama ve teslim kayıtları aynı akışta yönetilir.</p>
-          </div>
-          <div className="grid min-w-[320px] gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl bg-white/15 p-4 ring-1 ring-white/15"><p className="text-xs font-black text-blue-100">Toplam stok</p><p className="mt-1 text-3xl font-black">{totalExamStock + totalBookStock}</p></div>
-            <div className="rounded-2xl bg-white/15 p-4 ring-1 ring-white/15"><p className="text-xs font-black text-blue-100">Aktif raf</p><p className="mt-1 text-3xl font-black">{warehouse.shelves.filter((s) => s.isActive).length}</p></div>
-          </div>
-        </div>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardTile title="Deneme" value={totalExamStock} icon={<ClipboardCheck size={24} />} />
-        <DashboardTile title="Kitap" value={totalBookStock} icon={<BookOpen size={24} />} tone="purple" />
-        <DashboardTile title="Yeni sipariş" value={pendingOrders.length + externalPendingOrders.length} icon={<AlertTriangle size={24} />} tone="amber" />
-        <DashboardTile title="Hazırlanacak" value={preparedOrders.length} icon={<Truck size={24} />} tone="green" />
-      </div>
-      <div>
-        <SectionTitle title="Hızlı işlemler" subtitle="Mobil Depo App ana menü akışı" />
+  const renderDashboard = () => {
+    const isManager = normalizedCurrentRole === "yonetici";
+    const isDistributor = normalizedCurrentRole === "dagitici";
+    const mobileMenuItems = [
+      { id: "exams", title: "Denemeler", subtitle: "Ortaokul ve lise deneme stoklarını yönetin", icon: <ClipboardCheck size={24} />, tone: "blue", badge: `${warehouse.legacyExams.length} kayıt`, action: () => { setTab("stock"); setSubPage("exams"); } },
+      { id: "books", title: "Kitaplar", subtitle: "Kitap adı, stok adedi ve raf konumlarını yönetin", icon: <BookOpen size={24} />, tone: "purple", badge: `${warehouse.stockBooks.length} kayıt`, action: () => { setTab("stock"); setSubPage("books"); } },
+      { id: "shelves", title: "Raflar", subtitle: "Raf listesi, QR numarası ve raf içindeki ürünleri görün", icon: <Warehouse size={24} />, tone: "amber", badge: `${warehouse.shelves.filter((s) => s.isActive).length} aktif`, action: () => { setTab("shelves"); setSubPage(null); } },
+      { id: "barcode", title: "Barkodla Bul", subtitle: "Barkod/QR okutarak raf, deneme veya kitap bulun", icon: <QrCode size={24} />, tone: "green", action: () => { setTab("more"); setSubPage("barcode"); } },
+      { id: "critical", title: "Kritik Stok Uyarıları", subtitle: "20 altına düşen stokları görün", icon: <AlertTriangle size={24} />, tone: "red", badge: `${criticalExams.length + criticalBooks.length} uyarı`, action: () => { setTab("more"); setSubPage("critical"); } },
+      { id: "gift", title: "Hediye Denemeler", subtitle: "7 gün içinde silinecek hediye kayıtlarını yönetin", icon: <Gift size={24} />, tone: "green", action: () => { setTab("more"); setSubPage("gift"); } },
+      { id: "institutions", title: "Kayıtlı Okullar / Dershaneler", subtitle: "Siparişlerde seçilecek kurum listesini yönetin", icon: <Building2 size={24} />, tone: "indigo", badge: `${warehouse.institutions.length} kurum`, action: () => { setTab("more"); setSubPage("institutions"); } },
+      { id: "orders", title: "Siparişler", subtitle: "Sipariş oluştur, hazırla, teslim et ve TV ekranını aç", icon: <Truck size={24} />, tone: "teal", badge: `${pendingOrders.length + preparedOrders.length} aktif`, action: () => { setTab("orders"); setSubPage(null); } },
+      { id: "notifications", title: "Dağıtıcı Bildirimleri", subtitle: "Hazırlanan sipariş bildirimlerini gör", icon: <Bell size={24} />, tone: "green", badge: `${warehouse.notifications.filter((n) => !n.read).length} yeni`, visible: isDistributor || isManager, action: () => { setTab("more"); setSubPage("notifications"); } },
+      { id: "movements", title: "Seyir Defteri", subtitle: "Stok, deneme, kullanıcı ve kurum hareketlerini gör", icon: <History size={24} />, tone: "amber", visible: isManager, action: () => { setTab("more"); setSubPage("movements"); } },
+      { id: "report", title: "Gün Sonu Raporu", subtitle: "Teslimat, adet ve personel özetini gör", icon: <ClipboardCheck size={24} />, tone: "teal", visible: isManager, action: () => { setTab("more"); setSubPage("report"); } },
+      { id: "stockCount", title: "Stok Sayım Modu", subtitle: "Sayım farklarını kontrol et ve stoğu düzelt", icon: <Settings size={24} />, tone: "blue", visible: isManager, action: () => { setTab("more"); setSubPage("stockCount"); } },
+      { id: "trash", title: "Çöp Kutusu", subtitle: "Silinen hareket ve teslim kayıtlarını geri yükle", icon: <Trash2 size={24} />, tone: "red", visible: isManager, action: () => { setTab("more"); setSubPage("trash"); } },
+      { id: "users", title: "Depo Kullanıcıları", subtitle: "Personel ve dağıtıcı hesaplarını düzenle", icon: <Users size={24} />, tone: "slate", visible: isManager, action: () => { setTab("more"); setSubPage("users"); } },
+    ].filter((item) => item.visible !== false);
+
+    return (
+      <div className="grid gap-6">
+        <Header
+          title="Depo Yönetimi"
+          subtitle={`Mobil Depo App ana menüsüyle aynı mantık • ${roleLabel} modu • ${connectedStaffCount || warehouse.depotUsers.length} yetkili`}
+          icon={<Warehouse size={26} />}
+          actions={
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setModal({ type: "notifications" })} className="rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 ring-1 ring-blue-100">Bildirimler</button>
+              <button onClick={() => { setTab("more"); setSubPage("barcode"); }} className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white">Barkodla bul</button>
+            </div>
+          }
+        />
+
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <QuickAction title="Denemeler" subtitle="Sınıf ve kitapçık stokları" icon={<ClipboardCheck size={24} />} onClick={() => { setTab("stock"); setSubPage("exams"); }} />
-          <QuickAction title="Kitaplar" subtitle="Kitap stok ekranı" icon={<BookOpen size={24} />} tone="purple" onClick={() => { setTab("stock"); setSubPage("books"); }} />
-          <QuickAction title="Barkod / QR" subtitle="Ürün ve raf arama" icon={<QrCode size={24} />} tone="green" onClick={() => { setTab("more"); setSubPage("barcode"); }} />
-          <QuickAction title="Kritik stok" subtitle={`${criticalExams.length + criticalBooks.length} uyarı`} icon={<AlertTriangle size={24} />} tone="amber" onClick={() => { setTab("more"); setSubPage("critical"); }} />
+          <DashboardTile title="Toplam Stok" value={totalExamStock + totalBookStock} icon={<Boxes size={24} />} />
+          <DashboardTile title="Kritik Uyarı" value={criticalExams.length + criticalBooks.length} icon={<AlertTriangle size={24} />} tone="red" />
+          <DashboardTile title="Aktif Sipariş" value={pendingOrders.length + preparedOrders.length} icon={<Truck size={24} />} tone="green" />
+          <DashboardTile title="Raf" value={warehouse.shelves.filter((s) => s.isActive).length} icon={<Warehouse size={24} />} tone="amber" />
         </div>
+
+        <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <SectionTitle title="Kategoriler" subtitle="Stokları, barkodları ve hareketleri buradan yönetin." />
+          <div className="grid gap-3">
+            {mobileMenuItems.map((item) => (
+              <MobileMenuCard
+                key={item.id}
+                title={item.title}
+                subtitle={item.subtitle}
+                icon={item.icon}
+                tone={item.tone}
+                badge={item.badge}
+                onClick={item.action}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-2">
+          <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <SectionTitle title="Yeni Siparişler" subtitle={`${pendingOrders.length} depo siparişi bekliyor`} />
+            <div className="grid gap-3">{pendingOrders.length === 0 ? <EmptyBox text="Yeni sipariş yok." /> : pendingOrders.slice(0, 4).map((order) => <OrderCard key={order.id} order={order} compact onOpen={() => setSelectedOrder(order)} />)}</div>
+          </div>
+          <div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <SectionTitle title="Kritik Stok" subtitle="Stok seviyesi 20 altında olan ürünler" />
+            <div className="grid gap-3">{criticalExams.length + criticalBooks.length === 0 ? <EmptyBox text="Kritik stok yok." /> : [...criticalExams.map((e) => ({ type: "exam", item: e })), ...criticalBooks.map((b) => ({ type: "book", item: b }))].slice(0, 4).map((entry) => entry.type === "exam" ? <ExamStockCard key={entry.item.id} exam={entry.item} shelfLabel={shelfLabel} compact onOpen={() => setSelectedExam(entry.item)} /> : <BookStockCard key={entry.item.id} book={entry.item} compact onOpen={() => setSelectedBook(entry.item)} />)}</div>
+          </div>
+        </div>
+
+        <p className="text-right text-xs font-bold italic text-slate-400">Developed by Han KOP</p>
       </div>
-      <div className="grid gap-6 xl:grid-cols-2">
-        <div>
-          <SectionTitle title="Yeni siparişler" subtitle={`${pendingOrders.length} depo siparişi bekliyor`} />
-          <div className="grid gap-3">{pendingOrders.length === 0 ? <EmptyBox text="Yeni sipariş yok." /> : pendingOrders.slice(0, 4).map((order) => <OrderCard key={order.id} order={order} compact onOpen={() => setSelectedOrder(order)} />)}</div>
-        </div>
-        <div>
-          <SectionTitle title="Kritik stok" subtitle="Stok seviyesi 50 altında olan ürünler" />
-          <div className="grid gap-3">{criticalExams.length + criticalBooks.length === 0 ? <EmptyBox text="Kritik stok yok." /> : [...criticalExams.map((e) => ({ type: "exam", item: e })), ...criticalBooks.map((b) => ({ type: "book", item: b }))].slice(0, 4).map((entry) => entry.type === "exam" ? <ExamStockCard key={entry.item.id} exam={entry.item} shelfLabel={shelfLabel} compact onOpen={() => setSelectedExam(entry.item)} /> : <BookStockCard key={entry.item.id} book={entry.item} compact onOpen={() => setSelectedBook(entry.item)} />)}</div>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderStock = () => {
     if (subPage === "books") return renderBookHome();
@@ -1026,7 +1089,7 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
       ["tv", "TV Sipariş Ekranı", "Projeksiyon görünümü", <Monitor size={24} />, "slate"],
     ];
     if (!subPage || subPage === "moreHome") {
-      return <div className="grid gap-6"><Header title="Depo Menü" subtitle="Depo App içindeki tüm bölümler" icon={<Package size={26} />} /><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{items.map(([id, title, subtitle, icon, tone]) => <QuickAction key={id} title={title} subtitle={subtitle} icon={icon} tone={tone} onClick={() => setSubPage(id)} />)}</div></div>;
+      return <div className="grid gap-6"><Header title="Depo Menü" subtitle="Depo App içindeki tüm bölümler" icon={<Package size={26} />} /><div className="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200"><div className="grid gap-3">{items.map(([id, title, subtitle, icon, tone]) => <MobileMenuCard key={id} title={title} subtitle={subtitle} icon={icon} tone={tone} onClick={() => setSubPage(id)} />)}</div></div></div>;
     }
     return renderMoreSubPage();
   };
