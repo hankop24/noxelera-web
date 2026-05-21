@@ -45,11 +45,30 @@ const CLASS_GROUPS = {
   Lise: ["9. Sınıf", "10. Sınıf", "11. Sınıf", "12. Sınıf", "TYT", "AYT"],
 };
 
+const CRITICAL_STOCK_THRESHOLD = 20;
+
+function safeId(prefix, value) {
+  const raw = String(value || Date.now()).trim().toLowerCase();
+  return `${prefix}-${raw.replace(/[^a-z0-9ğüşöçıİĞÜŞÖÇ]+/gi, "-").replace(/^-+|-+$/g, "")}`;
+}
+
+function normalizeRoleValue(role) {
+  const value = String(role || "").toLowerCase();
+  if (["admin", "manager", "yonetici", "yönetici"].includes(value)) return "yonetici";
+  if (["personnel", "staff", "personel"].includes(value)) return "personel";
+  if (["distributor", "delivery", "dagitici", "dağıtıcı"].includes(value)) return "dagitici";
+  return value || "personel";
+}
+
+function nowTimestamp() {
+  return new Date().toISOString();
+}
+
 const DEFAULT_SHELVES = [
-  { id: 1, code: "A-01", name: "TYT Deneme Rafı", qrCode: "NXR-SHELF-A-01", note: "TYT ve 9-10 denemeleri", isActive: true, createdAt: "17 Mayıs 2026" },
-  { id: 2, code: "A-02", name: "AYT Deneme Rafı", qrCode: "NXR-SHELF-A-02", note: "AYT ve 11-12 denemeleri", isActive: true, createdAt: "17 Mayıs 2026" },
-  { id: 3, code: "B-01", name: "LGS Deneme Rafı", qrCode: "NXR-SHELF-B-01", note: "Ortaokul denemeleri", isActive: true, createdAt: "17 Mayıs 2026" },
-  { id: 4, code: "K-01", name: "Kitap ve Kaynak Rafı", qrCode: "NXR-SHELF-K-01", note: "Kitap stokları", isActive: true, createdAt: "17 Mayıs 2026" },
+  { id: "shelf-a-01", code: "A-01", name: "TYT Deneme Rafı", qrCode: "NXR-SHELF-A-01", note: "TYT ve 9-10 denemeleri", isActive: true, createdAt: "17 Mayıs 2026" },
+  { id: "shelf-a-02", code: "A-02", name: "AYT Deneme Rafı", qrCode: "NXR-SHELF-A-02", note: "AYT ve 11-12 denemeleri", isActive: true, createdAt: "17 Mayıs 2026" },
+  { id: "shelf-b-01", code: "B-01", name: "LGS Deneme Rafı", qrCode: "NXR-SHELF-B-01", note: "Ortaokul denemeleri", isActive: true, createdAt: "17 Mayıs 2026" },
+  { id: "shelf-k-01", code: "K-01", name: "Kitap ve Kaynak Rafı", qrCode: "NXR-SHELF-K-01", note: "Kitap stokları", isActive: true, createdAt: "17 Mayıs 2026" },
 ];
 
 const DEFAULT_EXAMS = [
@@ -59,7 +78,7 @@ const DEFAULT_EXAMS = [
     group: "Lise",
     name: "Bilgi Sarmal TYT Kurumsal Deneme",
     shelf: "A-01",
-    shelfId: 1,
+    shelfId: "shelf-a-01",
     barcode: "869000000001",
     variants: { "Kitapçık A": 170, "Kitapçık B": 150 },
     giftDate: "",
@@ -73,7 +92,7 @@ const DEFAULT_EXAMS = [
     group: "Ortaokul",
     name: "Paraf 8. Sınıf LGS Deneme",
     shelf: "B-01",
-    shelfId: 3,
+    shelfId: "shelf-b-01",
     barcode: "869000000002",
     variants: { "A Sayısal": 95, "A Sözel": 95, "B Sayısal": 85, "B Sözel": 85 },
     giftDate: "",
@@ -87,7 +106,7 @@ const DEFAULT_EXAMS = [
     group: "Lise",
     name: "Karekök AYT Eşit Ağırlık Deneme",
     shelf: "A-02",
-    shelfId: 2,
+    shelfId: "shelf-a-02",
     barcode: "869000000003",
     variants: { "Kitapçık A": 70, "Kitapçık B": 70 },
     giftDate: "",
@@ -101,7 +120,7 @@ const DEFAULT_EXAMS = [
     group: "Ortaokul",
     name: "Nitelik 6. Sınıf Değerlendirme Denemesi",
     shelf: "B-01",
-    shelfId: 3,
+    shelfId: "shelf-b-01",
     barcode: "869000000004",
     variants: { "A Sayısal": 32, "A Sözel": 30, "B Sayısal": 28, "B Sözel": 29 },
     giftDate: "",
@@ -112,9 +131,9 @@ const DEFAULT_EXAMS = [
 ];
 
 const DEFAULT_BOOKS = [
-  { id: "book-1", name: "TYT Matematik Soru Bankası", classLevel: "TYT", group: "Lise", stock: 95, shelf: "K-01", barcode: "978000000001", shelfId: 4, createdAt: "17 Mayıs 2026", active: true },
-  { id: "book-2", name: "LGS Yeni Nesil Türkçe Kitabı", classLevel: "8. Sınıf", group: "Ortaokul", stock: 74, shelf: "K-01", barcode: "978000000002", shelfId: 4, createdAt: "17 Mayıs 2026", active: true },
-  { id: "book-3", name: "AYT Edebiyat Soru Bankası", classLevel: "AYT", group: "Lise", stock: 18, shelf: "K-01", barcode: "978000000003", shelfId: 4, createdAt: "17 Mayıs 2026", active: true },
+  { id: "book-1", name: "TYT Matematik Soru Bankası", classLevel: "TYT", group: "Lise", stock: 95, shelf: "K-01", barcode: "978000000001", shelfId: "shelf-k-01", createdAt: "17 Mayıs 2026", active: true },
+  { id: "book-2", name: "LGS Yeni Nesil Türkçe Kitabı", classLevel: "8. Sınıf", group: "Ortaokul", stock: 74, shelf: "K-01", barcode: "978000000002", shelfId: "shelf-k-01", createdAt: "17 Mayıs 2026", active: true },
+  { id: "book-3", name: "AYT Edebiyat Soru Bankası", classLevel: "AYT", group: "Lise", stock: 18, shelf: "K-01", barcode: "978000000003", shelfId: "shelf-k-01", createdAt: "17 Mayıs 2026", active: true },
 ];
 
 const DEFAULT_INSTITUTIONS = [
@@ -139,7 +158,7 @@ const STATUS_LABELS = {
   prepared: "Hazırlandı",
   delivered: "Teslim Edildi",
   cancelled: "İptal Edildi",
-};
+ };
 
 function todayText() {
   return new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "long", year: "numeric" }).format(new Date());
@@ -151,14 +170,17 @@ function dateKey() {
 }
 
 function asLegacyShelf(shelf) {
+  const code = shelf.code || shelf.name || `RAF-${shelf.id}`;
+  const id = String(shelf.id || safeId("shelf", code));
   return {
-    id: shelf.id,
-    code: shelf.code || shelf.name || `RAF-${shelf.id}`,
-    name: shelf.name || shelf.code || `Raf ${shelf.id}`,
-    qrCode: shelf.qrCode || `NXR-SHELF-${String(shelf.code || shelf.id).toUpperCase()}`,
+    id: id.startsWith("shelf-") ? id : safeId("shelf", code || id),
+    code,
+    name: shelf.name || code || `Raf ${id}`,
+    qrCode: shelf.qrCode || `NXR-SHELF-${String(code || id).toUpperCase()}`,
     note: shelf.note || shelf.description || "",
     isActive: shelf.isActive ?? shelf.active ?? shelf.status !== "Pasif",
-    createdAt: shelf.createdAt || todayText(),
+    createdAt: shelf.createdAt || nowTimestamp(),
+    updatedAt: shelf.updatedAt || shelf.createdAt || nowTimestamp(),
   };
 }
 
@@ -173,8 +195,8 @@ function stockItemToLegacy(item) {
       stock: Number(item.quantity ?? item.stock ?? 0),
       shelf: shelfCode,
       barcode: item.barcode || item.qrCode || "",
-      shelfId: item.shelfId || "",
-      createdAt: item.createdAt || todayText(),
+      shelfId: String(item.shelfId || safeId("shelf", shelfCode)),
+      createdAt: item.createdAt || nowTimestamp(),
       active: item.status !== "Pasif" && item.active !== false,
     };
   }
@@ -186,7 +208,7 @@ function stockItemToLegacy(item) {
     group: groupForClass(item.category || "TYT"),
     name: item.name,
     shelf: shelfCode,
-    shelfId: item.shelfId || "",
+    shelfId: String(item.shelfId || safeId("shelf", shelfCode)),
     barcode: item.barcode || item.qrCode || "",
     variants: isMiddle
       ? { "A Sayısal": Math.ceil(quantity / 4), "A Sözel": Math.ceil(quantity / 4), "B Sayısal": Math.floor(quantity / 4), "B Sözel": Math.floor(quantity / 4) }
@@ -194,7 +216,7 @@ function stockItemToLegacy(item) {
     giftDate: "",
     isGiftRecord: false,
     active: item.status !== "Pasif" && item.active !== false,
-    createdAt: item.createdAt || todayText(),
+    createdAt: item.createdAt || nowTimestamp(),
   };
 }
 
@@ -277,12 +299,12 @@ function applyDeduction(exam, plan) {
   return next;
 }
 
-function hasCriticalStock(exam, threshold = 50) {
+function hasCriticalStock(exam, threshold = CRITICAL_STOCK_THRESHOLD) {
   if (isGift(exam) || orderAvailableTotal(exam) <= 0) return false;
   return Object.values(exam.variants || {}).some((count) => count > 0 && count < threshold);
 }
 
-function criticalText(exam, threshold = 50) {
+function criticalText(exam, threshold = CRITICAL_STOCK_THRESHOLD) {
   const critical = Object.entries(exam.variants || {})
     .filter(([, count]) => Number(count) > 0 && Number(count) < threshold)
     .map(([key, count]) => `${key}: ${count}`)
@@ -467,9 +489,13 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
   const [movementFilters, setMovementFilters] = useState({ search: "", action: "Tümü", user: "Tümü" });
   const [deliverySearch, setDeliverySearch] = useState("");
   const [institutionForm, setInstitutionForm] = useState({ name: "", type: "Dershane", isActive: true });
-  const [userForm, setUserForm] = useState({ name: "", role: "personel", title: "Personel", phone: "", email: "", isActive: true });
-  const [productForm, setProductForm] = useState({ group: "Ortaokul", classLevel: "8. Sınıf", name: "", shelfId: 3, barcode: "", variantMode: "Ortaokul", aSayisal: 0, aSozel: 0, bSayisal: 0, bSozel: 0, kitapcikA: 0, kitapcikB: 0 });
-  const [bookForm, setBookForm] = useState({ group: "Ortaokul", classLevel: "8. Sınıf", name: "", stock: 0, shelfId: 4, barcode: "" });
+  const [userForm, setUserForm] = useState({ name: "", role: "personel", title: "Personel", phone: "", email: "", password: "", isActive: true });
+  const [examEditForm, setExamEditForm] = useState(null);
+  const [bookEditForm, setBookEditForm] = useState(null);
+  const [shelfEditForm, setShelfEditForm] = useState(null);
+  const [userEditForm, setUserEditForm] = useState(null);
+  const [productForm, setProductForm] = useState({ group: "Ortaokul", classLevel: "8. Sınıf", name: "", shelfId: "shelf-b-01", barcode: "", variantMode: "Ortaokul", aSayisal: 0, aSozel: 0, bSayisal: 0, bSozel: 0, kitapcikA: 0, kitapcikB: 0 });
+  const [bookForm, setBookForm] = useState({ group: "Ortaokul", classLevel: "8. Sınıf", name: "", stock: 0, shelfId: "shelf-k-01", barcode: "" });
   const [shelfForm, setShelfForm] = useState({ code: "", qrCode: "", note: "" });
 
   const saveWarehouse = (updater) => {
@@ -485,15 +511,18 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
   const totalExamStock = warehouse.legacyExams.reduce((sum, exam) => sum + variantTotal(exam), 0);
   const totalBookStock = warehouse.stockBooks.reduce((sum, book) => sum + Number(book.stock || 0), 0);
   const criticalExams = warehouse.legacyExams.filter((exam) => hasCriticalStock(exam));
-  const criticalBooks = warehouse.stockBooks.filter((book) => Number(book.stock || 0) > 0 && Number(book.stock || 0) < 50);
+  const criticalBooks = warehouse.stockBooks.filter((book) => Number(book.stock || 0) > 0 && Number(book.stock || 0) < CRITICAL_STOCK_THRESHOLD);
   const pendingOrders = warehouse.depoOrders.filter((o) => o.status === "pending");
   const preparedOrders = warehouse.depoOrders.filter((o) => o.status === "prepared");
   const deliveredOrders = warehouse.depoOrders.filter((o) => o.status === "delivered");
   const externalPendingOrders = orders.filter((o) => o.status === "Onay bekliyor");
-  const roleLabel = currentStaffRole === "distributor" ? "Dağıtıcı" : currentStaffRole === "personnel" ? "Personel" : "Yönetici";
+  const normalizedCurrentRole = normalizeRoleValue(currentStaffRole);
+  const roleLabel = normalizedCurrentRole === "dagitici" ? "Dağıtıcı" : normalizedCurrentRole === "personel" ? "Personel" : "Yönetici";
+  const currentWarehouseUser = warehouse.depotUsers.find((u) => normalizeRoleValue(u.role) === normalizedCurrentRole && u.isActive !== false) || warehouse.depotUsers.find((u) => normalizeRoleValue(u.role) === "yonetici") || { name: "Noxelera Admin" };
+  const currentUserName = currentWarehouseUser.name || "Noxelera Admin";
   const connectedStaffCount = staffUsers.length;
 
-  const addMovement = (base, movement) => ({ ...base, movements: [movement, ...(base.movements || [])] });
+  const addMovement = (base, movement) => ({ ...base, movements: [{ ...movement, userName: movement?.userName || currentUserName, createdAt: movement?.createdAt || nowTimestamp() }, ...(base.movements || [])] });
 
   const updateExam = (examId, updater, movement) => {
     saveWarehouse((base) => {
@@ -525,13 +554,14 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
       ...base,
       shelves: [
         {
-          id: Date.now(),
+          id: safeId("shelf", shelfForm.code.trim()),
           code: shelfForm.code.trim(),
           name: shelfForm.code.trim(),
           qrCode: shelfForm.qrCode.trim() || `NXR-SHELF-${shelfForm.code.trim().toUpperCase().replaceAll(" ", "-")}`,
           note: shelfForm.note.trim(),
           isActive: true,
-          createdAt: todayText(),
+          createdAt: nowTimestamp(),
+          updatedAt: nowTimestamp(),
         },
         ...base.shelves,
       ],
@@ -550,7 +580,7 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
       group: groupForClass(productForm.classLevel),
       name: productForm.name.trim(),
       shelf: shelf?.code || "Belirtilmedi",
-      shelfId: Number(productForm.shelfId),
+      shelfId: String(productForm.shelfId),
       barcode: productForm.barcode.trim() || `EX-${Date.now()}`,
       variants: isMiddle
         ? { "A Sayısal": Number(productForm.aSayisal || 0), "A Sözel": Number(productForm.aSozel || 0), "B Sayısal": Number(productForm.bSayisal || 0), "B Sözel": Number(productForm.bSozel || 0) }
@@ -558,10 +588,10 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
       giftDate: "",
       isGiftRecord: false,
       active: true,
-      createdAt: todayText(),
+      createdAt: nowTimestamp(),
     };
     saveWarehouse((base) => addMovement({ ...base, legacyExams: [exam, ...base.legacyExams] }, makeMovement({ action: "Deneme eklendi", examName: exam.name, detail: `${exam.classLevel} • ${variantTotal(exam)} adet` })));
-    setProductForm({ group: "Ortaokul", classLevel: "8. Sınıf", name: "", shelfId: 3, barcode: "", variantMode: "Ortaokul", aSayisal: 0, aSozel: 0, bSayisal: 0, bSozel: 0, kitapcikA: 0, kitapcikB: 0 });
+    setProductForm({ group: "Ortaokul", classLevel: "8. Sınıf", name: "", shelfId: "shelf-b-01", barcode: "", variantMode: "Ortaokul", aSayisal: 0, aSozel: 0, bSayisal: 0, bSozel: 0, kitapcikA: 0, kitapcikB: 0 });
     setModal(null);
   };
 
@@ -575,13 +605,13 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
       group: groupForClass(bookForm.classLevel),
       stock: Number(bookForm.stock || 0),
       shelf: shelf?.code || "Belirtilmedi",
-      shelfId: Number(bookForm.shelfId),
+      shelfId: String(bookForm.shelfId),
       barcode: bookForm.barcode.trim() || `BK-${Date.now()}`,
-      createdAt: todayText(),
+      createdAt: nowTimestamp(),
       active: true,
     };
     saveWarehouse((base) => addMovement({ ...base, stockBooks: [book, ...base.stockBooks] }, makeMovement({ action: "Kitap eklendi", examName: book.name, detail: `${book.classLevel} • ${book.stock} adet` })));
-    setBookForm({ group: "Ortaokul", classLevel: "8. Sınıf", name: "", stock: 0, shelfId: 4, barcode: "" });
+    setBookForm({ group: "Ortaokul", classLevel: "8. Sınıf", name: "", stock: 0, shelfId: "shelf-k-01", barcode: "" });
     setModal(null);
   };
 
@@ -595,12 +625,12 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
 
   const moveExamShelf = (exam, shelfId) => {
     const shelf = shelfById(shelfId);
-    updateExam(exam.id, (current) => ({ ...current, shelfId: Number(shelfId), shelf: shelf?.code || current.shelf }), makeMovement({ action: "Raf değiştirildi", examName: exam.name, detail: `${shelf?.code || "Raf yok"} rafına taşındı.` }));
+    updateExam(exam.id, (current) => ({ ...current, shelfId: String(shelfId), shelf: shelf?.code || current.shelf }), makeMovement({ action: "Raf değiştirildi", examName: exam.name, detail: `${shelf?.code || "Raf yok"} rafına taşındı.` }));
   };
 
   const moveBookShelf = (book, shelfId) => {
     const shelf = shelfById(shelfId);
-    updateBook(book.id, (current) => ({ ...current, shelfId: Number(shelfId), shelf: shelf?.code || current.shelf }), makeMovement({ action: "Kitap rafı değiştirildi", examName: book.name, detail: `${shelf?.code || "Raf yok"} rafına taşındı.` }));
+    updateBook(book.id, (current) => ({ ...current, shelfId: String(shelfId), shelf: shelf?.code || current.shelf }), makeMovement({ action: "Kitap rafı değiştirildi", examName: book.name, detail: `${shelf?.code || "Raf yok"} rafına taşındı.` }));
   };
 
   const toggleExam = (exam) => updateExam(exam.id, (current) => ({ ...current, active: !current.active }), makeMovement({ action: exam.active ? "Deneme pasife alındı" : "Deneme aktif edildi", examName: exam.name, detail: "Durum değiştirildi." }));
@@ -609,14 +639,81 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
   const markGift = (exam) => updateExam(exam.id, (current) => ({ ...current, giftDate: new Date().toISOString(), isGiftRecord: true }), makeMovement({ action: "Hediye kategorisine alındı", examName: exam.name, detail: "7 günlük hediye takibi başladı." }));
 
   const deleteExam = (exam) => {
-    saveWarehouse((base) => addMovement({ ...base, legacyExams: base.legacyExams.filter((item) => item.id !== exam.id), deletedRecords: [makeDeletedRecord("exams", exam.id, exam), ...base.deletedRecords] }, makeMovement({ action: "Deneme silindi", examName: exam.name, detail: "Kayıt çöp kutusuna taşındı." })));
+    saveWarehouse((base) => addMovement({ ...base, legacyExams: base.legacyExams.filter((item) => item.id !== exam.id), deletedRecords: [makeDeletedRecord("exams", exam.id, exam, currentUserName), ...base.deletedRecords] }, makeMovement({ action: "Deneme silindi", examName: exam.name, detail: "Kayıt çöp kutusuna taşındı." })));
     setSelectedExam(null);
   };
 
   const deleteBook = (book) => {
-    saveWarehouse((base) => addMovement({ ...base, stockBooks: base.stockBooks.filter((item) => item.id !== book.id), deletedRecords: [makeDeletedRecord("books", book.id, book), ...base.deletedRecords] }, makeMovement({ action: "Kitap silindi", examName: book.name, detail: "Kayıt çöp kutusuna taşındı." })));
+    saveWarehouse((base) => addMovement({ ...base, stockBooks: base.stockBooks.filter((item) => item.id !== book.id), deletedRecords: [makeDeletedRecord("books", book.id, book, currentUserName), ...base.deletedRecords] }, makeMovement({ action: "Kitap silindi", examName: book.name, detail: "Kayıt çöp kutusuna taşındı." })));
     setSelectedBook(null);
   };
+
+  const openEditExam = (exam) => {
+    setExamEditForm({ id: exam.id, name: exam.name || "", classLevel: exam.classLevel || "8. Sınıf", barcode: exam.barcode || "", shelfId: String(exam.shelfId || ""), active: exam.active !== false });
+    setSelectedExam(null);
+    setModal({ type: "editExam" });
+  };
+
+  const saveEditedExam = () => {
+    if (!examEditForm?.name?.trim()) return;
+    const shelf = shelfById(examEditForm.shelfId);
+    updateExam(examEditForm.id, (current) => ({
+      ...current,
+      name: examEditForm.name.trim(),
+      classLevel: examEditForm.classLevel,
+      group: groupForClass(examEditForm.classLevel),
+      barcode: examEditForm.barcode.trim(),
+      shelfId: String(examEditForm.shelfId),
+      shelf: shelf?.code || current.shelf,
+      active: examEditForm.active,
+      updatedAt: nowTimestamp(),
+    }), makeMovement({ action: "Deneme bilgisi düzenlendi", examName: examEditForm.name.trim(), detail: `${examEditForm.classLevel} • ${shelf?.code || "Raf yok"}` }));
+    setExamEditForm(null);
+    setModal(null);
+  };
+
+  const openEditBook = (book) => {
+    setBookEditForm({ id: book.id, name: book.name || "", classLevel: book.classLevel || "8. Sınıf", barcode: book.barcode || "", shelfId: String(book.shelfId || ""), stock: Number(book.stock || 0), active: book.active !== false });
+    setSelectedBook(null);
+    setModal({ type: "editBook" });
+  };
+
+  const saveEditedBook = () => {
+    if (!bookEditForm?.name?.trim()) return;
+    const shelf = shelfById(bookEditForm.shelfId);
+    updateBook(bookEditForm.id, (current) => ({
+      ...current,
+      name: bookEditForm.name.trim(),
+      classLevel: bookEditForm.classLevel,
+      group: groupForClass(bookEditForm.classLevel),
+      barcode: bookEditForm.barcode.trim(),
+      shelfId: String(bookEditForm.shelfId),
+      shelf: shelf?.code || current.shelf,
+      stock: Math.max(0, Number(bookEditForm.stock || 0)),
+      active: bookEditForm.active,
+      updatedAt: nowTimestamp(),
+    }), makeMovement({ action: "Kitap bilgisi düzenlendi", examName: bookEditForm.name.trim(), detail: `${bookEditForm.classLevel} • ${shelf?.code || "Raf yok"}` }));
+    setBookEditForm(null);
+    setModal(null);
+  };
+
+  const openEditShelf = (shelf) => {
+    setShelfEditForm({ id: shelf.id, code: shelf.code || "", name: shelf.name || "", qrCode: shelf.qrCode || "", note: shelf.note || "", isActive: shelf.isActive !== false });
+    setSelectedShelf(null);
+    setModal({ type: "editShelf" });
+  };
+
+  const saveEditedShelf = () => {
+    if (!shelfEditForm?.code?.trim()) return;
+    saveWarehouse((base) => addMovement({
+      ...base,
+      shelves: base.shelves.map((item) => item.id === shelfEditForm.id ? { ...item, code: shelfEditForm.code.trim(), name: shelfEditForm.name.trim() || `${shelfEditForm.code.trim()} Rafı`, qrCode: shelfEditForm.qrCode.trim(), note: shelfEditForm.note.trim(), isActive: shelfEditForm.isActive, updatedAt: nowTimestamp() } : item),
+    }, makeMovement({ action: "Raf düzenlendi", examName: shelfEditForm.code.trim(), detail: shelfEditForm.isActive ? "Aktif" : "Pasif" })));
+    setShelfEditForm(null);
+    setModal(null);
+  };
+
+  const toggleShelf = (shelf) => saveWarehouse((base) => addMovement({ ...base, shelves: base.shelves.map((item) => item.id === shelf.id ? { ...item, isActive: !item.isActive, updatedAt: nowTimestamp() } : item) }, makeMovement({ action: shelf.isActive ? "Raf pasife alındı" : "Raf aktif edildi", examName: shelf.code, detail: "Durum değiştirildi" })));
 
   const createOrder = () => {
     const exam = warehouse.legacyExams.find((item) => item.id === orderForm.examId);
@@ -632,10 +729,10 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
       destination: orderForm.destination.trim(),
       note: orderForm.note.trim(),
       status: "pending",
-      createdBy: "Noxelera Admin",
+      createdBy: currentUserName,
       preparedBy: "",
       deliveredBy: "",
-      createdAt: todayText(),
+      createdAt: nowTimestamp(),
       preparedAt: "",
       deliveredAt: "",
     };
@@ -645,7 +742,7 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
   };
 
   const deliverOrder = (order) => {
-    const delivered = { ...order, status: "delivered", deliveredBy: "Noxelera Admin", deliveredAt: todayText() };
+    const delivered = { ...order, status: "delivered", deliveredBy: currentUserName, deliveredAt: todayText() };
     const record = {
       id: nextId("delivery"),
       orderId: order.id,
@@ -653,8 +750,8 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
       quantity: order.quantity,
       destination: order.destination,
       note: order.note,
-      deliveredBy: "Noxelera Admin",
-      preparedBy: order.preparedBy || "Noxelera Admin",
+      deliveredBy: currentUserName,
+      preparedBy: order.preparedBy || currentUserName,
       deliveredAt: todayText(),
       dateKey: dateKey(),
     };
@@ -700,8 +797,8 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
     }
     saveWarehouse((base) => {
       const nextExams = base.legacyExams.map((item) => item.id === exam.id ? applyDeduction(item, plan) : item);
-      const nextOrders = base.depoOrders.map((item) => item.id === order.id ? { ...item, status: "prepared", preparedBy: "Noxelera Admin", preparedAt: todayText() } : item);
-      const notification = { id: nextId("ntf"), title: "Yeni teslimat hazır", body: `${order.destination} için ${order.examName} hazırlandı.`, orderId: order.id, createdAt: todayText(), read: false };
+      const nextOrders = base.depoOrders.map((item) => item.id === order.id ? { ...item, status: "prepared", preparedBy: currentUserName, preparedAt: todayText() } : item);
+      const notification = { id: nextId("ntf"), title: "Yeni teslimat hazır", body: `${order.destination} için ${order.examName} hazırlandı.`, orderId: order.id, createdAt: nowTimestamp(), read: false };
       return addMovement({ ...base, legacyExams: nextExams, depoOrders: nextOrders, notifications: [notification, ...(base.notifications || [])] }, makeMovement({ action: "Sipariş hazırlandı", examName: order.examName, detail: Object.entries(plan).map(([k, v]) => `${k}: ${v}`).join(" | ") }));
     });
     setSelectedOrder(null);
@@ -726,16 +823,33 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
 
   const addDepotUser = () => {
     if (!userForm.name.trim()) return;
-    saveWarehouse((base) => addMovement({ ...base, depotUsers: [{ id: nextId("user"), ...userForm, name: userForm.name.trim() }, ...base.depotUsers] }, makeMovement({ action: "Depo kullanıcısı eklendi", examName: userForm.name.trim(), detail: userForm.title || userForm.role })));
-    setUserForm({ name: "", role: "personel", title: "Personel", phone: "", email: "", isActive: true });
+    saveWarehouse((base) => addMovement({ ...base, depotUsers: [{ id: nextId("user"), ...userForm, role: normalizeRoleValue(userForm.role), name: userForm.name.trim(), createdAt: nowTimestamp(), updatedAt: nowTimestamp() }, ...base.depotUsers] }, makeMovement({ action: "Depo kullanıcısı eklendi", examName: userForm.name.trim(), detail: userForm.title || userForm.role })));
+    setUserForm({ name: "", role: "personel", title: "Personel", phone: "", email: "", password: "", isActive: true });
     setModal(null);
   };
 
-  const toggleDepotUser = (user) => saveWarehouse((base) => ({ ...base, depotUsers: base.depotUsers.map((item) => item.id === user.id ? { ...item, isActive: !item.isActive } : item) }));
+  const toggleDepotUser = (user) => saveWarehouse((base) => addMovement({ ...base, depotUsers: base.depotUsers.map((item) => item.id === user.id ? { ...item, isActive: !item.isActive, updatedAt: nowTimestamp() } : item) }, makeMovement({ action: user.isActive ? "Depo kullanıcısı pasife alındı" : "Depo kullanıcısı aktif edildi", examName: user.name, detail: user.role })));
 
-  const deleteDeliveryRecord = (record) => saveWarehouse((base) => ({ ...base, deliveryRecords: base.deliveryRecords.filter((item) => item.id !== record.id), deletedRecords: [makeDeletedRecord("deliveryRecords", record.id, record), ...base.deletedRecords] }));
+  const openEditDepotUser = (user) => {
+    setUserEditForm({ id: user.id, name: user.name || "", role: normalizeRoleValue(user.role), title: user.title || "", phone: user.phone || "", email: user.email || "", password: user.password || "", isActive: user.isActive !== false });
+    setModal({ type: "editDepotUser" });
+  };
 
-  const deleteMovementRecord = (movement) => saveWarehouse((base) => ({ ...base, movements: base.movements.filter((item) => item.id !== movement.id), deletedRecords: [makeDeletedRecord("movements", movement.id, movement), ...base.deletedRecords] }));
+  const saveEditedDepotUser = () => {
+    if (!userEditForm?.name?.trim()) return;
+    saveWarehouse((base) => addMovement({
+      ...base,
+      depotUsers: base.depotUsers.map((item) => item.id === userEditForm.id ? { ...item, ...userEditForm, role: normalizeRoleValue(userEditForm.role), name: userEditForm.name.trim(), updatedAt: nowTimestamp() } : item),
+    }, makeMovement({ action: "Depo kullanıcısı düzenlendi", examName: userEditForm.name.trim(), detail: userEditForm.role })));
+    setUserEditForm(null);
+    setModal(null);
+  };
+
+  const deleteDepotUser = (user) => saveWarehouse((base) => addMovement({ ...base, depotUsers: base.depotUsers.filter((item) => item.id !== user.id), deletedRecords: [makeDeletedRecord("depotUsers", user.id, user, currentUserName), ...base.deletedRecords] }, makeMovement({ action: "Depo kullanıcısı silindi", examName: user.name, detail: "Kayıt çöp kutusuna taşındı" })));
+
+  const deleteDeliveryRecord = (record) => saveWarehouse((base) => ({ ...base, deliveryRecords: base.deliveryRecords.filter((item) => item.id !== record.id), deletedRecords: [makeDeletedRecord("deliveryRecords", record.id, record, currentUserName), ...base.deletedRecords] }));
+
+  const deleteMovementRecord = (movement) => saveWarehouse((base) => ({ ...base, movements: base.movements.filter((item) => item.id !== movement.id), deletedRecords: [makeDeletedRecord("movements", movement.id, movement, currentUserName), ...base.deletedRecords] }));
 
   const markNotificationRead = (notificationId) => saveWarehouse((base) => ({ ...base, notifications: base.notifications.map((n) => n.id === notificationId ? { ...n, read: true } : n) }));
 
@@ -746,9 +860,12 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
       if (record.collectionName === "books") next = { ...next, stockBooks: [record.originalData, ...next.stockBooks] };
       if (record.collectionName === "deliveryRecords") next = { ...next, deliveryRecords: [record.originalData, ...next.deliveryRecords] };
       if (record.collectionName === "movements") next = { ...next, movements: [record.originalData, ...next.movements] };
+      if (record.collectionName === "depotUsers") next = { ...next, depotUsers: [record.originalData, ...next.depotUsers] };
       return addMovement(next, makeMovement({ action: "Kayıt geri yüklendi", examName: record.title || record.collectionName, detail: record.originalId }));
     });
   };
+
+  const permanentlyDeleteRecord = (record) => saveWarehouse((base) => addMovement({ ...base, deletedRecords: base.deletedRecords.filter((item) => item.id !== record.id) }, makeMovement({ action: "Kayıt kalıcı silindi", examName: record.originalData?.name || record.originalData?.examName || record.collectionName, detail: record.originalId })));
 
   const searchResults = useMemo(() => {
     const q = scanQuery.trim().toLowerCase();
@@ -885,10 +1002,6 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
     books: warehouse.stockBooks.filter((book) => String(book.shelfId) === String(shelf.id) || book.shelf === shelf.code),
   });
 
-  const toggleShelf = (shelf) => {
-    saveWarehouse((base) => ({ ...base, shelves: base.shelves.map((item) => item.id === shelf.id ? { ...item, isActive: !item.isActive } : item) }));
-  };
-
   const renderOrders = () => (
     <div className="grid gap-6">
       <Header title="Sipariş Yönetimi" subtitle="Yeni, hazırlanan ve teslim edilen siparişler" icon={<ClipboardCheck size={26} />} actions={<><button onClick={() => setModal({ type: "createOrder" })} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white"><Plus size={16} className="mr-1 inline" />Sipariş oluştur</button><button onClick={() => { setTab("more"); setSubPage("delivery"); }} className="rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 ring-1 ring-blue-100">Teslim kayıtları</button></>} />
@@ -929,7 +1042,7 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
     }
     if (subPage === "notifications") return <SimplePage title="Dağıtıcı Bildirimleri" subtitle="Hazırlanan siparişler dağıtıcı ekranına düşer" icon={<Bell size={26} />} back={back}>{warehouse.notifications.length === 0 ? <EmptyBox text="Yeni bildirim yok." /> : warehouse.notifications.map((n) => <div key={n.id} className={`rounded-[1.6rem] p-4 ring-1 ${n.read ? "bg-white ring-slate-200" : "bg-emerald-50 ring-emerald-100"}`}><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><Pill tone={n.read ? "slate" : "green"}>{n.read ? "Okundu" : "Yeni"}</Pill><p className="mt-3 font-black text-slate-950">{n.title}</p><p className="mt-1 text-sm font-bold text-slate-500">{n.body}</p><p className="mt-2 text-xs font-bold text-slate-400">{n.createdAt}</p></div>{!n.read && <button onClick={() => markNotificationRead(n.id)} className="rounded-2xl bg-white px-3 py-2 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">Okundu yap</button>}</div></div>)}</SimplePage>;
     if (subPage === "institutions") return <SimplePage title="Kurumlar" subtitle="Siparişlerde seçilecek okul / dershane listesi" icon={<Building2 size={26} />} back={<div className="flex flex-wrap gap-2">{back}<button onClick={() => setModal({ type: "addInstitution" })} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Kurum ekle</button></div>}>{warehouse.institutions.map((item) => <div key={item.id} className="rounded-[1.6rem] bg-white p-4 ring-1 ring-slate-200"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-black text-slate-950">{item.name}</p><p className="mt-1 text-sm font-bold text-slate-500">{item.type} • {item.isActive ? "Aktif" : "Pasif"}</p></div><button onClick={() => toggleInstitution(item)} className="rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700">{item.isActive ? "Pasife al" : "Aktif et"}</button></div></div>)}</SimplePage>;
-    if (subPage === "users") return <SimplePage title="Kullanıcılar" subtitle="Personel ve dağıtıcılar" icon={<Users size={26} />} back={<div className="flex flex-wrap gap-2">{back}<button onClick={() => setModal({ type: "addDepotUser" })} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Kullanıcı ekle</button></div>}>{warehouse.depotUsers.map((item) => <div key={item.id} className="rounded-[1.6rem] bg-white p-4 ring-1 ring-slate-200"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-black text-slate-950">{item.name}</p><p className="mt-1 text-sm font-bold text-slate-500">{item.title || item.role} • {item.phone || "Telefon yok"} • {item.email || "E-posta yok"}</p></div><button onClick={() => toggleDepotUser(item)} className="rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700">{item.isActive ? "Pasife al" : "Aktif et"}</button></div></div>)}</SimplePage>;
+    if (subPage === "users") return <SimplePage title="Kullanıcılar" subtitle="Personel ve dağıtıcılar" icon={<Users size={26} />} back={<div className="flex flex-wrap gap-2">{back}<button onClick={() => setModal({ type: "addDepotUser" })} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Kullanıcı ekle</button></div>}>{warehouse.depotUsers.map((item) => <div key={item.id} className="rounded-[1.6rem] bg-white p-4 ring-1 ring-slate-200"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-black text-slate-950">{item.name}</p><p className="mt-1 text-sm font-bold text-slate-500">{item.title || item.role} • {item.phone || "Telefon yok"} • {item.email || "E-posta yok"}</p><p className="mt-1 text-xs font-black text-slate-400">Rol değeri: {normalizeRoleValue(item.role)} • {item.isActive ? "Aktif" : "Pasif"}</p></div><div className="flex flex-wrap gap-2"><button onClick={() => openEditDepotUser(item)} className="rounded-2xl bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 ring-1 ring-blue-100">Düzenle</button><button onClick={() => toggleDepotUser(item)} className="rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700">{item.isActive ? "Pasife al" : "Aktif et"}</button><button onClick={() => deleteDepotUser(item)} className="rounded-2xl bg-red-50 px-3 py-2 text-xs font-black text-red-700 ring-1 ring-red-100">Sil</button></div></div></div>)}</SimplePage>;
     if (subPage === "movements") {
       const actions = ["Tümü", ...new Set(warehouse.movements.map((m) => m.action).filter(Boolean))];
       const users = ["Tümü", ...new Set(warehouse.movements.map((m) => m.userName).filter(Boolean))];
@@ -939,7 +1052,7 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
       });
       return <SimplePage title="Seyir Defteri" subtitle="Stok hareketleri, kullanıcı ve sipariş logları" icon={<History size={26} />} back={back}><div className="rounded-[2rem] bg-white p-5 ring-1 ring-slate-200"><div className="mb-4 grid gap-3 lg:grid-cols-3"><TextInput label="Ara" value={movementFilters.search} onChange={(v) => setMovementFilters((f) => ({ ...f, search: v }))} placeholder="Ürün, kullanıcı, işlem..." /><SelectInput label="İşlem" value={movementFilters.action} onChange={(v) => setMovementFilters((f) => ({ ...f, action: v }))} options={actions} /><SelectInput label="Kullanıcı" value={movementFilters.user} onChange={(v) => setMovementFilters((f) => ({ ...f, user: v }))} options={users} /></div><div className="grid gap-2">{logs.length === 0 ? <EmptyBox text="Hareket kaydı yok." /> : logs.map((m) => <MovementCard key={m.id} movement={m} onDelete={() => deleteMovementRecord(m)} />)}</div></div></SimplePage>;
     }
-    if (subPage === "trash") return <SimplePage title="Çöp Kutusu" subtitle="Silinen kayıtlar" icon={<Trash2 size={26} />} back={back}>{warehouse.deletedRecords.length === 0 ? <EmptyBox text="Silinen kayıt bulunmuyor." /> : warehouse.deletedRecords.map((r) => <div key={r.id} className="rounded-[1.6rem] bg-white p-4 ring-1 ring-slate-200"><p className="font-black text-slate-950">{r.collectionName}</p><p className="mt-1 text-sm font-bold text-slate-500">{r.originalData?.name || r.originalData?.examName || r.originalId}</p><button onClick={() => restoreDeleted(r)} className="mt-3 rounded-2xl bg-blue-50 px-4 py-2 text-xs font-black text-blue-700 ring-1 ring-blue-100">Geri yükle</button></div>)}</SimplePage>;
+    if (subPage === "trash") return <SimplePage title="Çöp Kutusu" subtitle="Silinen kayıtlar" icon={<Trash2 size={26} />} back={back}>{warehouse.deletedRecords.length === 0 ? <EmptyBox text="Silinen kayıt bulunmuyor." /> : warehouse.deletedRecords.map((r) => <div key={r.id} className="rounded-[1.6rem] bg-white p-4 ring-1 ring-slate-200"><p className="font-black text-slate-950">{r.collectionName}</p><p className="mt-1 text-sm font-bold text-slate-500">{r.originalData?.name || r.originalData?.examName || r.originalId}</p><p className="mt-1 text-xs font-bold text-slate-400">Silen: {r.deletedBy || "-"} • {r.deletedAt}</p><div className="mt-3 flex flex-wrap gap-2"><button onClick={() => restoreDeleted(r)} className="rounded-2xl bg-blue-50 px-4 py-2 text-xs font-black text-blue-700 ring-1 ring-blue-100">Geri yükle</button><button onClick={() => permanentlyDeleteRecord(r)} className="rounded-2xl bg-red-50 px-4 py-2 text-xs font-black text-red-700 ring-1 ring-red-100">Kalıcı sil</button></div></div>)}</SimplePage>;
     if (subPage === "report") return <SimplePage title="Gün Sonu Raporu" subtitle="Teslim, stok ve işlem özeti" icon={<ClipboardCheck size={26} />} back={back}><div className="grid gap-4 md:grid-cols-2"><DashboardTile title="Teslim" value={deliveredOrders.length + warehouse.deliveryRecords.length} icon={<CheckCircle2 size={24} />} tone="green" /><DashboardTile title="Adet" value={warehouse.deliveryRecords.reduce((s, r) => s + Number(r.quantity || 0), 0)} icon={<Package size={24} />} /><DashboardTile title="Stok" value={totalExamStock + totalBookStock} icon={<Warehouse size={24} />} tone="purple" /><DashboardTile title="Hareket" value={warehouse.movements.length} icon={<History size={24} />} tone="amber" /></div></SimplePage>;
     if (subPage === "stockCount") return <SimplePage title="Stok Sayımı" subtitle="Mobildeki gibi deneme seç, fiziksel sayımı gir ve farkı kaydet" icon={<Settings size={26} />} back={back}><div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]"><div className="rounded-[1.6rem] bg-white p-4 ring-1 ring-slate-200"><SectionTitle title="Sınıf özetleri" subtitle="Deneme ve kitap toplamları" />{Object.entries(CLASS_GROUPS).map(([group, classes]) => <div key={group} className="mb-4"><p className="mb-2 font-black text-blue-700">{group}</p><div className="grid gap-2">{classes.map((className) => { const examTotal = warehouse.legacyExams.filter((e) => e.classLevel === className).reduce((sum, e) => sum + variantTotal(e), 0); const bookTotal = warehouse.stockBooks.filter((b) => b.classLevel === className).reduce((sum, b) => sum + Number(b.stock || 0), 0); return <div key={className} className="flex items-center justify-between rounded-2xl bg-slate-50 p-3"><span className="font-black text-slate-700">{className}</span><span className="font-black text-slate-950">D: {examTotal} / K: {bookTotal}</span></div>; })}</div></div>)}</div><div className="rounded-[1.6rem] bg-white p-4 ring-1 ring-slate-200"><SectionTitle title="Deneme bazlı sayım" subtitle="Mobil SingleExamStockCountPage karşılığı" /> <div className="grid gap-3">{warehouse.legacyExams.length === 0 ? <EmptyBox text="Sayılacak deneme yok." /> : warehouse.legacyExams.map((exam) => <button key={exam.id} onClick={() => { setStockCountDraft({ ...exam.variants }); setModal({ type: "stockCount", examId: exam.id }); }} className="rounded-2xl bg-slate-50 p-4 text-left ring-1 ring-slate-100 hover:bg-blue-50"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-black text-slate-950">{exam.name}</p><p className="text-sm font-bold text-slate-500">{exam.classLevel} • Raf: {exam.shelf} • Hazırlanabilir: {orderAvailableTotal(exam)}</p></div><Pill>Sayım yap</Pill></div></button>)}</div></div></div></SimplePage>;
     if (subPage === "tv") return <TvOrderDisplay orders={warehouse.depoOrders} onBack={() => setSubPage("moreHome")} />;
@@ -981,19 +1094,23 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
       </div>
       {activeContent()}
 
-      {selectedExam && <ExamDetailModal exam={selectedExam} shelves={warehouse.shelves} shelfLabel={shelfLabel} onClose={() => setSelectedExam(null)} onVariantChange={changeVariant} onMoveShelf={moveExamShelf} onToggle={toggleExam} onGift={markGift} onDelete={deleteExam} movements={warehouse.movements.filter((m) => m.examName === selectedExam.name)} />}
-      {selectedBook && <BookDetailModal book={selectedBook} shelves={warehouse.shelves} onClose={() => setSelectedBook(null)} onStockChange={changeBookStock} onMoveShelf={moveBookShelf} onToggle={toggleBook} onDelete={deleteBook} />}
-      {selectedShelf && <ShelfDetailModal shelf={selectedShelf} products={productsForShelf(selectedShelf)} onClose={() => setSelectedShelf(null)} onExamOpen={setSelectedExam} onBookOpen={setSelectedBook} />}
+      {selectedExam && <ExamDetailModal exam={selectedExam} shelves={warehouse.shelves} shelfLabel={shelfLabel} onClose={() => setSelectedExam(null)} onVariantChange={changeVariant} onMoveShelf={moveExamShelf} onToggle={toggleExam} onGift={markGift} onDelete={deleteExam} onEdit={openEditExam} movements={warehouse.movements.filter((m) => m.examName === selectedExam.name)} />}
+      {selectedBook && <BookDetailModal book={selectedBook} shelves={warehouse.shelves} onClose={() => setSelectedBook(null)} onStockChange={changeBookStock} onMoveShelf={moveBookShelf} onToggle={toggleBook} onDelete={deleteBook} onEdit={openEditBook} />}
+      {selectedShelf && <ShelfDetailModal shelf={selectedShelf} products={productsForShelf(selectedShelf)} onClose={() => setSelectedShelf(null)} onExamOpen={setSelectedExam} onBookOpen={setSelectedBook} onEdit={openEditShelf} onToggle={toggleShelf} />}
       {selectedOrder && <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} onPrepare={prepareOrder} onDeliver={deliverOrder} onCancel={cancelOrder} onEdit={openEditOrder} exam={warehouse.legacyExams.find((e) => e.id === selectedOrder.examId)} />}
       {modal?.type === "addShelf" && <Modal title="Yeni Raf Ekle" subtitle="Raf adı, QR numarası ve not girin" onClose={() => setModal(null)}><div className="grid gap-4"><TextInput label="Raf adı / kodu" value={shelfForm.code} onChange={(v) => setShelfForm((s) => ({ ...s, code: v, qrCode: s.qrCode || `NXR-SHELF-${v.toUpperCase().replaceAll(" ", "-")}` }))} placeholder="Örn: A-1" /><TextInput label="Raf QR numarası" value={shelfForm.qrCode} onChange={(v) => setShelfForm((s) => ({ ...s, qrCode: v }))} /><TextInput label="Not" value={shelfForm.note} onChange={(v) => setShelfForm((s) => ({ ...s, note: v }))} /><button onClick={addShelf} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Kaydet</button></div></Modal>}
       {modal?.type === "addExam" && <Modal title="Yeni Deneme Ekle" subtitle="Ortaokulda A/B sayısal-sözel, lisede kitapçık A/B stokları girilir" onClose={() => setModal(null)}><AddExamForm form={productForm} setForm={setProductForm} shelves={warehouse.shelves} onSave={addExam} /></Modal>}
       {modal?.type === "addBook" && <Modal title="Yeni Kitap Ekle" subtitle="Kitap adı, sınıf, raf ve stok bilgisi" onClose={() => setModal(null)}><AddBookForm form={bookForm} setForm={setBookForm} shelves={warehouse.shelves} onSave={addBook} /></Modal>}
+      {modal?.type === "editExam" && examEditForm && <Modal title="Deneme Bilgisini Düzenle" subtitle="Ad, sınıf, barkod, raf ve aktiflik bilgisini mobil mantıkla güncelle" onClose={() => setModal(null)}><EditExamForm form={examEditForm} setForm={setExamEditForm} shelves={warehouse.shelves} onSave={saveEditedExam} /></Modal>}
+      {modal?.type === "editBook" && bookEditForm && <Modal title="Kitap Bilgisini Düzenle" subtitle="Ad, sınıf, barkod, raf, stok ve aktiflik bilgisini güncelle" onClose={() => setModal(null)}><EditBookForm form={bookEditForm} setForm={setBookEditForm} shelves={warehouse.shelves} onSave={saveEditedBook} /></Modal>}
+      {modal?.type === "editShelf" && shelfEditForm && <Modal title="Raf Bilgisini Düzenle" subtitle="Raf kodu, QR, not ve aktif/pasif durumunu güncelle" onClose={() => setModal(null)}><EditShelfForm form={shelfEditForm} setForm={setShelfEditForm} onSave={saveEditedShelf} /></Modal>}
       {modal?.type === "createOrder" && <Modal title="Sipariş Oluştur" subtitle="Deneme, hedef kurum ve adet seçin" onClose={() => setModal(null)}><CreateOrderForm form={orderForm} setForm={setOrderForm} exams={warehouse.legacyExams} institutions={warehouse.institutions} onSave={createOrder} /></Modal>}
       {modal?.type === "info" && <Modal title={modal.title} subtitle="İşlem tamamlanamadı" onClose={() => setModal(null)}><div className="rounded-2xl bg-amber-50 p-4 text-sm font-bold text-amber-800 ring-1 ring-amber-100">{modal.text}</div></Modal>}
       {modal?.type === "editOrder" && <Modal title="Sipariş Düzenle" subtitle="Sadece aktif siparişlerde deneme, adet, kurum ve not değiştir" onClose={() => setModal(null)}><CreateOrderForm form={editOrderForm} setForm={setEditOrderForm} exams={warehouse.legacyExams} institutions={warehouse.institutions} onSave={saveEditedOrder} saveLabel="Değişiklikleri kaydet" /></Modal>}
       {modal?.type === "stockCount" && (() => { const exam = warehouse.legacyExams.find((e) => e.id === modal.examId); return exam ? <Modal title={`Sayım: ${exam.name}`} subtitle="Fiziksel sayım adetlerini gir. Farklar Seyir Defteri'ne yazılır." onClose={() => setModal(null)}><div className="grid gap-4">{Object.entries(exam.variants || {}).map(([key, value]) => <TextInput key={key} label={`${key} / Sistemde: ${value}`} type="number" value={stockCountDraft[key] ?? value} onChange={(v) => setStockCountDraft((d) => ({ ...d, [key]: v }))} />)}<button onClick={() => saveStockCount(exam)} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Sayımı kaydet</button></div></Modal> : null; })()}
       {modal?.type === "addInstitution" && <Modal title="Kurum Ekle" subtitle="Siparişlerde seçilecek okul / dershane kaydı" onClose={() => setModal(null)}><div className="grid gap-4"><TextInput label="Kurum adı" value={institutionForm.name} onChange={(v) => setInstitutionForm((f) => ({ ...f, name: v }))} /><SelectInput label="Tür" value={institutionForm.type} onChange={(v) => setInstitutionForm((f) => ({ ...f, type: v }))} options={["Dershane", "Kurs", "Okul", "Kurum"]} /><button onClick={addInstitution} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Kaydet</button></div></Modal>}
-      {modal?.type === "addDepotUser" && <Modal title="Depo Kullanıcısı Ekle" subtitle="Personel veya dağıtıcı hesabı" onClose={() => setModal(null)}><div className="grid gap-4"><TextInput label="Ad soyad" value={userForm.name} onChange={(v) => setUserForm((f) => ({ ...f, name: v }))} /><SelectInput label="Rol" value={userForm.role} onChange={(v) => setUserForm((f) => ({ ...f, role: v, title: v === "dagitici" ? "Dağıtıcı" : v === "yonetici" ? "Yönetici" : "Personel" }))} options={[{ value: "personel", label: "Personel" }, { value: "dagitici", label: "Dağıtıcı" }, { value: "yonetici", label: "Yönetici" }]} /><TextInput label="Telefon" value={userForm.phone} onChange={(v) => setUserForm((f) => ({ ...f, phone: v }))} /><TextInput label="E-posta" value={userForm.email} onChange={(v) => setUserForm((f) => ({ ...f, email: v }))} /><button onClick={addDepotUser} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Kaydet</button></div></Modal>}
+      {modal?.type === "addDepotUser" && <Modal title="Depo Kullanıcısı Ekle" subtitle="Personel veya dağıtıcı hesabı" onClose={() => setModal(null)}><UserForm form={userForm} setForm={setUserForm} onSave={addDepotUser} /></Modal>}
+      {modal?.type === "editDepotUser" && userEditForm && <Modal title="Depo Kullanıcısını Düzenle" subtitle="Rol, iletişim, aktiflik ve şifre bilgisini güncelle" onClose={() => setModal(null)}><UserForm form={userEditForm} setForm={setUserEditForm} onSave={saveEditedDepotUser} saveLabel="Değişiklikleri kaydet" /></Modal>}
       {modal?.type === "notifications" && <Modal title="Bildirimler" subtitle="Dağıtıcı ve depo bildirimleri" onClose={() => setModal(null)}>{warehouse.notifications.length === 0 ? <EmptyBox text="Yeni bildirim yok." /> : <div className="grid gap-3">{warehouse.notifications.map((n) => <div key={n.id} className="rounded-2xl bg-blue-50 p-4 text-sm font-bold text-blue-800 ring-1 ring-blue-100">{n.title} — {n.body}</div>)}</div>}</Modal>}
     </div>
   );
@@ -1003,12 +1120,31 @@ function AddExamForm({ form, setForm, shelves, onSave }) {
   const group = groupForClass(form.classLevel);
   const isMiddle = group === "Ortaokul";
   const classOptions = [...CLASS_GROUPS.Ortaokul, ...CLASS_GROUPS.Lise];
-  return <div className="grid gap-4"><SelectInput label="Sınıf" value={form.classLevel} onChange={(v) => setForm((s) => ({ ...s, classLevel: v, group: groupForClass(v) }))} options={classOptions} /><TextInput label="Deneme adı" value={form.name} onChange={(v) => setForm((s) => ({ ...s, name: v }))} /><TextInput label="Barkod" value={form.barcode} onChange={(v) => setForm((s) => ({ ...s, barcode: v }))} /><SelectInput label="Raf" value={form.shelfId} onChange={(v) => setForm((s) => ({ ...s, shelfId: Number(v) }))} options={shelves.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}` }))} />{isMiddle ? <div className="grid gap-3 sm:grid-cols-2"><TextInput label="A Sayısal" type="number" value={form.aSayisal} onChange={(v) => setForm((s) => ({ ...s, aSayisal: v }))} /><TextInput label="A Sözel" type="number" value={form.aSozel} onChange={(v) => setForm((s) => ({ ...s, aSozel: v }))} /><TextInput label="B Sayısal" type="number" value={form.bSayisal} onChange={(v) => setForm((s) => ({ ...s, bSayisal: v }))} /><TextInput label="B Sözel" type="number" value={form.bSozel} onChange={(v) => setForm((s) => ({ ...s, bSozel: v }))} /></div> : <div className="grid gap-3 sm:grid-cols-2"><TextInput label="Kitapçık A" type="number" value={form.kitapcikA} onChange={(v) => setForm((s) => ({ ...s, kitapcikA: v }))} /><TextInput label="Kitapçık B" type="number" value={form.kitapcikB} onChange={(v) => setForm((s) => ({ ...s, kitapcikB: v }))} /></div>}<button onClick={onSave} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Kaydet</button></div>;
+  return <div className="grid gap-4"><SelectInput label="Sınıf" value={form.classLevel} onChange={(v) => setForm((s) => ({ ...s, classLevel: v, group: groupForClass(v) }))} options={classOptions} /><TextInput label="Deneme adı" value={form.name} onChange={(v) => setForm((s) => ({ ...s, name: v }))} /><TextInput label="Barkod" value={form.barcode} onChange={(v) => setForm((s) => ({ ...s, barcode: v }))} /><SelectInput label="Raf" value={form.shelfId} onChange={(v) => setForm((s) => ({ ...s, shelfId: String(v) }))} options={shelves.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}` }))} />{isMiddle ? <div className="grid gap-3 sm:grid-cols-2"><TextInput label="A Sayısal" type="number" value={form.aSayisal} onChange={(v) => setForm((s) => ({ ...s, aSayisal: v }))} /><TextInput label="A Sözel" type="number" value={form.aSozel} onChange={(v) => setForm((s) => ({ ...s, aSozel: v }))} /><TextInput label="B Sayısal" type="number" value={form.bSayisal} onChange={(v) => setForm((s) => ({ ...s, bSayisal: v }))} /><TextInput label="B Sözel" type="number" value={form.bSozel} onChange={(v) => setForm((s) => ({ ...s, bSozel: v }))} /></div> : <div className="grid gap-3 sm:grid-cols-2"><TextInput label="Kitapçık A" type="number" value={form.kitapcikA} onChange={(v) => setForm((s) => ({ ...s, kitapcikA: v }))} /><TextInput label="Kitapçık B" type="number" value={form.kitapcikB} onChange={(v) => setForm((s) => ({ ...s, kitapcikB: v }))} /></div>}<button onClick={onSave} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Kaydet</button></div>;
 }
 
 function AddBookForm({ form, setForm, shelves, onSave }) {
   const classOptions = [...CLASS_GROUPS.Ortaokul, ...CLASS_GROUPS.Lise];
-  return <div className="grid gap-4"><SelectInput label="Sınıf" value={form.classLevel} onChange={(v) => setForm((s) => ({ ...s, classLevel: v, group: groupForClass(v) }))} options={classOptions} /><TextInput label="Kitap adı" value={form.name} onChange={(v) => setForm((s) => ({ ...s, name: v }))} /><TextInput label="Stok sayısı" type="number" value={form.stock} onChange={(v) => setForm((s) => ({ ...s, stock: v }))} /><TextInput label="Barkod" value={form.barcode} onChange={(v) => setForm((s) => ({ ...s, barcode: v }))} /><SelectInput label="Raf" value={form.shelfId} onChange={(v) => setForm((s) => ({ ...s, shelfId: Number(v) }))} options={shelves.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}` }))} /><button onClick={onSave} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Kaydet</button></div>;
+  return <div className="grid gap-4"><SelectInput label="Sınıf" value={form.classLevel} onChange={(v) => setForm((s) => ({ ...s, classLevel: v, group: groupForClass(v) }))} options={classOptions} /><TextInput label="Kitap adı" value={form.name} onChange={(v) => setForm((s) => ({ ...s, name: v }))} /><TextInput label="Stok sayısı" type="number" value={form.stock} onChange={(v) => setForm((s) => ({ ...s, stock: v }))} /><TextInput label="Barkod" value={form.barcode} onChange={(v) => setForm((s) => ({ ...s, barcode: v }))} /><SelectInput label="Raf" value={form.shelfId} onChange={(v) => setForm((s) => ({ ...s, shelfId: String(v) }))} options={shelves.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}` }))} /><button onClick={onSave} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Kaydet</button></div>;
+}
+
+
+function EditExamForm({ form, setForm, shelves, onSave }) {
+  const classOptions = [...CLASS_GROUPS.Ortaokul, ...CLASS_GROUPS.Lise];
+  return <div className="grid gap-4"><SelectInput label="Sınıf" value={form.classLevel} onChange={(v) => setForm((s) => ({ ...s, classLevel: v }))} options={classOptions} /><TextInput label="Deneme adı" value={form.name} onChange={(v) => setForm((s) => ({ ...s, name: v }))} /><TextInput label="Barkod" value={form.barcode} onChange={(v) => setForm((s) => ({ ...s, barcode: v }))} /><SelectInput label="Raf" value={form.shelfId} onChange={(v) => setForm((s) => ({ ...s, shelfId: String(v) }))} options={shelves.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}` }))} /><label className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 text-sm font-black text-slate-700 ring-1 ring-slate-100"><input type="checkbox" checked={form.active} onChange={(e) => setForm((s) => ({ ...s, active: e.target.checked }))} />Aktif kayıt</label><button onClick={onSave} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Değişiklikleri kaydet</button></div>;
+}
+
+function EditBookForm({ form, setForm, shelves, onSave }) {
+  const classOptions = [...CLASS_GROUPS.Ortaokul, ...CLASS_GROUPS.Lise];
+  return <div className="grid gap-4"><SelectInput label="Sınıf" value={form.classLevel} onChange={(v) => setForm((s) => ({ ...s, classLevel: v }))} options={classOptions} /><TextInput label="Kitap adı" value={form.name} onChange={(v) => setForm((s) => ({ ...s, name: v }))} /><TextInput label="Barkod" value={form.barcode} onChange={(v) => setForm((s) => ({ ...s, barcode: v }))} /><TextInput label="Stok" type="number" value={form.stock} onChange={(v) => setForm((s) => ({ ...s, stock: v }))} /><SelectInput label="Raf" value={form.shelfId} onChange={(v) => setForm((s) => ({ ...s, shelfId: String(v) }))} options={shelves.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}` }))} /><label className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 text-sm font-black text-slate-700 ring-1 ring-slate-100"><input type="checkbox" checked={form.active} onChange={(e) => setForm((s) => ({ ...s, active: e.target.checked }))} />Aktif kayıt</label><button onClick={onSave} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Değişiklikleri kaydet</button></div>;
+}
+
+function EditShelfForm({ form, setForm, onSave }) {
+  return <div className="grid gap-4"><TextInput label="Raf kodu" value={form.code} onChange={(v) => setForm((s) => ({ ...s, code: v }))} /><TextInput label="Raf adı" value={form.name} onChange={(v) => setForm((s) => ({ ...s, name: v }))} /><TextInput label="QR kodu" value={form.qrCode} onChange={(v) => setForm((s) => ({ ...s, qrCode: v }))} /><TextInput label="Not" value={form.note} onChange={(v) => setForm((s) => ({ ...s, note: v }))} /><label className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 text-sm font-black text-slate-700 ring-1 ring-slate-100"><input type="checkbox" checked={form.isActive} onChange={(e) => setForm((s) => ({ ...s, isActive: e.target.checked }))} />Aktif raf</label><button onClick={onSave} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Değişiklikleri kaydet</button></div>;
+}
+
+function UserForm({ form, setForm, onSave, saveLabel = "Kaydet" }) {
+  return <div className="grid gap-4"><TextInput label="Ad soyad" value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} /><SelectInput label="Rol" value={normalizeRoleValue(form.role)} onChange={(v) => setForm((f) => ({ ...f, role: normalizeRoleValue(v), title: v === "dagitici" ? "Dağıtıcı" : v === "yonetici" ? "Yönetici" : "Personel" }))} options={[{ value: "personel", label: "Personel" }, { value: "dagitici", label: "Dağıtıcı" }, { value: "yonetici", label: "Yönetici" }]} /><TextInput label="Telefon" value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} /><TextInput label="E-posta" value={form.email} onChange={(v) => setForm((f) => ({ ...f, email: v }))} /><TextInput label="Şifre" value={form.password || ""} onChange={(v) => setForm((f) => ({ ...f, password: v }))} placeholder="Mobil giriş için şifre" /><label className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 text-sm font-black text-slate-700 ring-1 ring-slate-100"><input type="checkbox" checked={form.isActive !== false} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} />Aktif kullanıcı</label><button onClick={onSave} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">{saveLabel}</button></div>;
 }
 
 function CreateOrderForm({ form, setForm, exams, institutions, onSave, saveLabel = "Sipariş oluştur" }) {
@@ -1023,7 +1159,7 @@ function ExamStockCard({ exam, shelfLabel, compact = false, onOpen, onGift }) {
 }
 
 function BookStockCard({ book, compact = false, onOpen }) {
-  const critical = Number(book.stock || 0) > 0 && Number(book.stock || 0) < 50;
+  const critical = Number(book.stock || 0) > 0 && Number(book.stock || 0) < CRITICAL_STOCK_THRESHOLD;
   return <div className="rounded-[1.6rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"><button onClick={onOpen} className="w-full text-left"><div className="flex items-start gap-3"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-violet-700"><BookOpen size={24} /></div><div className="min-w-0 flex-1"><p className="font-black text-slate-950">{book.name}</p><p className="mt-1 text-xs font-bold text-slate-500">{book.group} • {book.classLevel} • {book.shelf}</p><div className="mt-2 flex flex-wrap gap-2"><Pill tone="purple">Kitap</Pill>{critical && <Pill tone="amber">Kritik</Pill>}</div></div><div className="text-right"><p className="text-3xl font-black text-slate-950">{book.stock}</p><p className="text-[11px] font-black text-slate-400">stok</p></div></div></button>{!compact && <button onClick={onOpen} className="mt-4 w-full rounded-2xl bg-violet-50 px-3 py-2 text-xs font-black text-violet-700 ring-1 ring-violet-100">Detay</button>}</div>;
 }
 
@@ -1031,20 +1167,20 @@ function MovementCard({ movement, onDelete }) {
   return <div className="rounded-[1.6rem] bg-white p-4 ring-1 ring-slate-200"><div className="flex items-start justify-between gap-3"><div className="flex items-start gap-3"><Clock size={18} className="mt-1 text-blue-700" /><div><p className="font-black text-slate-950">{movement.action}</p><p className="mt-1 text-sm font-bold text-slate-500">{movement.examName}</p><p className="mt-1 text-xs font-bold text-slate-400">{movement.detail} • {movement.createdAt}</p></div></div>{onDelete && <button onClick={onDelete} className="rounded-2xl bg-red-50 px-3 py-2 text-xs font-black text-red-700 ring-1 ring-red-100">Çöpe taşı</button>}</div></div>;
 }
 
-function ExamDetailModal({ exam, shelves, shelfLabel, onClose, onVariantChange, onMoveShelf, onToggle, onGift, onDelete, movements }) {
+function ExamDetailModal({ exam, shelves, shelfLabel, onClose, onVariantChange, onMoveShelf, onToggle, onGift, onDelete, onEdit, movements }) {
   const [delta, setDelta] = useState({});
-  const [moveShelf, setMoveShelf] = useState(exam.shelfId || shelves[0]?.id || "");
-  return <Modal title="Deneme Detayı" subtitle={`${exam.classLevel} • ${exam.shelf}`} onClose={onClose} wide><div className="grid gap-5"><div className="grid gap-3 md:grid-cols-3"><DashboardTile title="Toplam" value={variantTotal(exam)} icon={<Package size={22} />} /><DashboardTile title="Siparişe uygun" value={orderAvailableTotal(exam)} icon={<ClipboardCheck size={22} />} tone="green" /><DashboardTile title="Raf" value={shelfLabel(exam.shelfId)} icon={<Warehouse size={22} />} tone="amber" /></div><div className="rounded-[1.6rem] bg-slate-50 p-4 ring-1 ring-slate-100"><SectionTitle title="Kitapçık / set stokları" subtitle={isMiddleSchool(exam) ? "Ortaokul: A/B Sayısal + Sözel set mantığı" : "Lise: Kitapçık A/B mantığı"} /><div className="grid gap-3 md:grid-cols-2">{Object.entries(exam.variants || {}).map(([key, value]) => <div key={key} className="rounded-2xl bg-white p-4 ring-1 ring-slate-100"><div className="flex items-center justify-between"><div><p className="font-black text-slate-950">{key}</p><p className="text-sm font-bold text-slate-500">Mevcut: {value}</p></div><input type="number" value={delta[key] || ""} onChange={(e) => setDelta((d) => ({ ...d, [key]: e.target.value }))} placeholder="Adet" className="w-24 rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-black" /></div><div className="mt-3 grid grid-cols-2 gap-2"><button onClick={() => onVariantChange(exam, key, Number(delta[key] || 0), "manuel giriş")} className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">Ekle</button><button onClick={() => onVariantChange(exam, key, -Number(delta[key] || 0), "manuel çıkış")} className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 ring-1 ring-amber-100">Düşür</button></div></div>)}</div></div><div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto]"><SelectInput label="Raf değiştir" value={moveShelf} onChange={setMoveShelf} options={shelves.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}` }))} /><button onClick={() => onMoveShelf(exam, moveShelf)} className="self-end rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Taşı</button><button onClick={() => onToggle(exam)} className="self-end rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-700">{exam.active ? "Pasife al" : "Aktif et"}</button><button onClick={() => onGift(exam)} className="self-end rounded-2xl bg-violet-50 px-4 py-3 text-sm font-black text-violet-700 ring-1 ring-violet-100">Hediye</button></div><div className="rounded-[1.6rem] bg-slate-50 p-4 ring-1 ring-slate-100"><SectionTitle title="Seyir geçmişi" subtitle="Bu ürünle ilgili hareketler" />{movements.length === 0 ? <EmptyBox text="Bu ürün için hareket yok." /> : <div className="grid gap-2">{movements.map((m) => <MovementCard key={m.id} movement={m} />)}</div>}</div><button onClick={() => onDelete(exam)} className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-black text-red-700 ring-1 ring-red-100">Denemeyi sil / çöp kutusuna taşı</button></div></Modal>;
+  const [moveShelf, setMoveShelf] = useState(String(exam.shelfId || shelves[0]?.id || ""));
+  return <Modal title="Deneme Detayı" subtitle={`${exam.classLevel} • ${exam.shelf}`} onClose={onClose} wide><div className="grid gap-5"><div className="grid gap-3 md:grid-cols-3"><DashboardTile title="Toplam" value={variantTotal(exam)} icon={<Package size={22} />} /><DashboardTile title="Siparişe uygun" value={orderAvailableTotal(exam)} icon={<ClipboardCheck size={22} />} tone="green" /><DashboardTile title="Raf" value={shelfLabel(exam.shelfId)} icon={<Warehouse size={22} />} tone="amber" /></div><div className="grid gap-2 sm:grid-cols-4"><button onClick={() => onEdit(exam)} className="rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 ring-1 ring-blue-100">Bilgileri düzenle</button><button onClick={() => onToggle(exam)} className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-700">{exam.active ? "Pasife al" : "Aktif et"}</button><button onClick={() => onGift(exam)} className="rounded-2xl bg-violet-50 px-4 py-3 text-sm font-black text-violet-700 ring-1 ring-violet-100">Hediye</button><button onClick={() => onDelete(exam)} className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-black text-red-700 ring-1 ring-red-100">Sil / çöpe taşı</button></div><div className="rounded-[1.6rem] bg-slate-50 p-4 ring-1 ring-slate-100"><SectionTitle title="Kitapçık / set stokları" subtitle={isMiddleSchool(exam) ? "Ortaokul: A/B Sayısal + Sözel set mantığı" : "Lise: Kitapçık A/B mantığı"} /><div className="grid gap-3 md:grid-cols-2">{Object.entries(exam.variants || {}).map(([key, value]) => <div key={key} className="rounded-2xl bg-white p-4 ring-1 ring-slate-100"><div className="flex items-center justify-between"><div><p className="font-black text-slate-950">{key}</p><p className="text-sm font-bold text-slate-500">Mevcut: {value}</p></div><input type="number" value={delta[key] || ""} onChange={(e) => setDelta((d) => ({ ...d, [key]: e.target.value }))} placeholder="Adet" className="w-24 rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-black" /></div><div className="mt-3 grid grid-cols-2 gap-2"><button onClick={() => onVariantChange(exam, key, Number(delta[key] || 0), "manuel giriş")} className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">Ekle</button><button onClick={() => onVariantChange(exam, key, -Number(delta[key] || 0), "manuel çıkış")} className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 ring-1 ring-amber-100">Düşür</button></div></div>)}</div></div><div className="grid gap-3 md:grid-cols-[1fr_auto]"><SelectInput label="Raf değiştir" value={moveShelf} onChange={setMoveShelf} options={shelves.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}` }))} /><button onClick={() => onMoveShelf(exam, moveShelf)} className="self-end rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Taşı</button></div><div className="rounded-[1.6rem] bg-slate-50 p-4 ring-1 ring-slate-100"><SectionTitle title="Seyir geçmişi" subtitle="Bu ürünle ilgili hareketler" />{movements.length === 0 ? <EmptyBox text="Bu ürün için hareket yok." /> : <div className="grid gap-2">{movements.map((m) => <MovementCard key={m.id} movement={m} />)}</div>}</div></div></Modal>;
 }
 
-function BookDetailModal({ book, shelves, onClose, onStockChange, onMoveShelf, onToggle, onDelete }) {
+function BookDetailModal({ book, shelves, onClose, onStockChange, onMoveShelf, onToggle, onDelete, onEdit }) {
   const [delta, setDelta] = useState(0);
-  const [moveShelf, setMoveShelf] = useState(book.shelfId || shelves[0]?.id || "");
-  return <Modal title="Kitap Detayı" subtitle={`${book.classLevel} • ${book.shelf}`} onClose={onClose}><div className="grid gap-4"><DashboardTile title="Stok" value={book.stock} icon={<BookOpen size={22} />} tone="purple" /><TextInput label="Adet" type="number" value={delta} onChange={setDelta} /><div className="grid gap-2 sm:grid-cols-2"><button onClick={() => onStockChange(book, Number(delta), "manuel giriş")} className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-700 ring-1 ring-emerald-100">Stok ekle</button><button onClick={() => onStockChange(book, -Number(delta), "manuel çıkış")} className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-black text-amber-700 ring-1 ring-amber-100">Stok düşür</button></div><div className="grid gap-3 md:grid-cols-[1fr_auto]"><SelectInput label="Raf değiştir" value={moveShelf} onChange={setMoveShelf} options={shelves.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}` }))} /><button onClick={() => onMoveShelf(book, moveShelf)} className="self-end rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Taşı</button></div><button onClick={() => onToggle(book)} className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-700">{book.active ? "Pasife al" : "Aktif et"}</button><button onClick={() => onDelete(book)} className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-black text-red-700 ring-1 ring-red-100">Kitabı sil / çöp kutusuna taşı</button></div></Modal>;
+  const [moveShelf, setMoveShelf] = useState(String(book.shelfId || shelves[0]?.id || ""));
+  return <Modal title="Kitap Detayı" subtitle={`${book.classLevel} • ${book.shelf}`} onClose={onClose}><div className="grid gap-4"><DashboardTile title="Stok" value={book.stock} icon={<BookOpen size={22} />} tone="purple" /><div className="grid gap-2 sm:grid-cols-3"><button onClick={() => onEdit(book)} className="rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 ring-1 ring-blue-100">Bilgileri düzenle</button><button onClick={() => onToggle(book)} className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-700">{book.active ? "Pasife al" : "Aktif et"}</button><button onClick={() => onDelete(book)} className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-black text-red-700 ring-1 ring-red-100">Sil / çöpe taşı</button></div><TextInput label="Adet" type="number" value={delta} onChange={setDelta} /><div className="grid gap-2 sm:grid-cols-2"><button onClick={() => onStockChange(book, Number(delta), "manuel giriş")} className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-700 ring-1 ring-emerald-100">Stok ekle</button><button onClick={() => onStockChange(book, -Number(delta), "manuel çıkış")} className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-black text-amber-700 ring-1 ring-amber-100">Stok düşür</button></div><div className="grid gap-3 md:grid-cols-[1fr_auto]"><SelectInput label="Raf değiştir" value={moveShelf} onChange={setMoveShelf} options={shelves.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}` }))} /><button onClick={() => onMoveShelf(book, moveShelf)} className="self-end rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Taşı</button></div></div></Modal>;
 }
 
-function ShelfDetailModal({ shelf, products, onClose, onExamOpen, onBookOpen }) {
-  return <Modal title={`Raf ${shelf.code}`} subtitle={`${shelf.qrCode} • ${shelf.isActive ? "Aktif" : "Pasif"}`} onClose={onClose} wide><div className="grid gap-5"><div className="rounded-[1.6rem] bg-amber-50 p-5 ring-1 ring-amber-100"><p className="text-3xl font-black text-slate-950">{shelf.code}</p><p className="mt-2 text-sm font-bold text-slate-600">QR: {shelf.qrCode}</p>{shelf.note && <p className="mt-2 text-sm font-bold text-amber-800">{shelf.note}</p>}</div><div><SectionTitle title="Bu raftaki denemeler" />{products.exams.length === 0 ? <EmptyBox text="Bu rafta deneme yok." /> : <div className="grid gap-3">{products.exams.map((exam) => <ExamStockCard key={exam.id} exam={exam} shelfLabel={() => shelf.code} onOpen={() => onExamOpen(exam)} />)}</div>}</div><div><SectionTitle title="Bu raftaki kitaplar" />{products.books.length === 0 ? <EmptyBox text="Bu rafta kitap yok." /> : <div className="grid gap-3">{products.books.map((book) => <BookStockCard key={book.id} book={book} onOpen={() => onBookOpen(book)} />)}</div>}</div></div></Modal>;
+function ShelfDetailModal({ shelf, products, onClose, onExamOpen, onBookOpen, onEdit, onToggle }) {
+  return <Modal title={`Raf ${shelf.code}`} subtitle={`${shelf.qrCode} • ${shelf.isActive ? "Aktif" : "Pasif"}`} onClose={onClose} wide><div className="grid gap-5"><div className="rounded-[1.6rem] bg-amber-50 p-5 ring-1 ring-amber-100"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-3xl font-black text-slate-950">{shelf.code}</p><p className="mt-2 text-sm font-bold text-slate-600">QR: {shelf.qrCode}</p>{shelf.note && <p className="mt-2 text-sm font-bold text-amber-800">{shelf.note}</p>}</div><div className="flex flex-wrap gap-2"><button onClick={() => onEdit(shelf)} className="rounded-2xl bg-white px-4 py-2 text-xs font-black text-blue-700 ring-1 ring-blue-100">Rafı düzenle</button><button onClick={() => onToggle(shelf)} className="rounded-2xl bg-white px-4 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200">{shelf.isActive ? "Pasife al" : "Aktif et"}</button></div></div></div><div><SectionTitle title="Bu raftaki denemeler" />{products.exams.length === 0 ? <EmptyBox text="Bu rafta deneme yok." /> : <div className="grid gap-3">{products.exams.map((exam) => <ExamStockCard key={exam.id} exam={exam} shelfLabel={() => shelf.code} onOpen={() => onExamOpen(exam)} />)}</div>}</div><div><SectionTitle title="Bu raftaki kitaplar" />{products.books.length === 0 ? <EmptyBox text="Bu rafta kitap yok." /> : <div className="grid gap-3">{products.books.map((book) => <BookStockCard key={book.id} book={book} onOpen={() => onBookOpen(book)} />)}</div>}</div></div></Modal>;
 }
 
 function OrderCard({ order, compact = false, onOpen, onPrepare, onDeliver, onCancel }) {

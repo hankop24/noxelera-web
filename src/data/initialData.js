@@ -381,17 +381,17 @@ export function generateTemporaryPassword() {
 
 export const INITIAL_WAREHOUSE = {
   shelves: [
-    { id: 1, code: "A-1", name: "A-1 Rafı", qrCode: "RAF-A-1", description: "TYT ve AYT denemeleri", status: "Aktif" },
-    { id: 2, code: "A-2", name: "A-2 Rafı", qrCode: "RAF-A-2", description: "LGS ve ortaokul denemeleri", status: "Aktif" },
-    { id: 3, code: "B-1", name: "B-1 Rafı", qrCode: "RAF-B-1", description: "Kitap stok alanı", status: "Aktif" },
-    { id: 4, code: "C-1", name: "C-1 Rafı", qrCode: "RAF-C-1", description: "Yedek ve kampanya ürünleri", status: "Aktif" },
+    { id: "shelf-a-1", code: "A-1", name: "A-1 Rafı", qrCode: "RAF-A-1", description: "TYT ve AYT denemeleri", status: "Aktif" },
+    { id: "shelf-a-2", code: "A-2", name: "A-2 Rafı", qrCode: "RAF-A-2", description: "LGS ve ortaokul denemeleri", status: "Aktif" },
+    { id: "shelf-b-1", code: "B-1", name: "B-1 Rafı", qrCode: "RAF-B-1", description: "Kitap stok alanı", status: "Aktif" },
+    { id: "shelf-c-1", code: "C-1", name: "C-1 Rafı", qrCode: "RAF-C-1", description: "Yedek ve kampanya ürünleri", status: "Aktif" },
   ],
   stockItems: [
-    { id: 1, type: "Deneme", name: "Apotemi TYT Genel Deneme", brand: "Apotemi", category: "TYT", barcode: "869000000001", qrCode: "QR-APO-TYT-001", shelfId: 1, quantity: 320, minStock: 50, status: "Aktif" },
-    { id: 2, type: "Deneme", name: "Hız ve Renk LGS Deneme", brand: "Hız ve Renk", category: "LGS", barcode: "869000000002", qrCode: "QR-HR-LGS-001", shelfId: 2, quantity: 210, minStock: 40, status: "Aktif" },
-    { id: 3, type: "Kitap", name: "TYT Matematik Soru Bankası", brand: "Noxelera", category: "TYT", barcode: "869000000003", qrCode: "QR-NOX-TYT-MAT", shelfId: 3, quantity: 95, minStock: 20, status: "Aktif" },
-    { id: 4, type: "Kitap", name: "AYT Edebiyat Soru Bankası", brand: "Noxelera", category: "AYT", barcode: "869000000004", qrCode: "QR-NOX-AYT-EDB", shelfId: 3, quantity: 18, minStock: 20, status: "Aktif" },
-    { id: 5, type: "Deneme", name: "Paraf 8. Sınıf LGS Deneme", brand: "Paraf", category: "LGS", barcode: "869000000005", qrCode: "QR-PAR-LGS-001", shelfId: 2, quantity: 72, minStock: 30, status: "Aktif" },
+    { id: 1, type: "Deneme", name: "Apotemi TYT Genel Deneme", brand: "Apotemi", category: "TYT", barcode: "869000000001", qrCode: "QR-APO-TYT-001", shelfId: "shelf-a-1", quantity: 320, minStock: 20, status: "Aktif" },
+    { id: 2, type: "Deneme", name: "Hız ve Renk LGS Deneme", brand: "Hız ve Renk", category: "LGS", barcode: "869000000002", qrCode: "QR-HR-LGS-001", shelfId: "shelf-a-2", quantity: 210, minStock: 20, status: "Aktif" },
+    { id: 3, type: "Kitap", name: "TYT Matematik Soru Bankası", brand: "Noxelera", category: "TYT", barcode: "869000000003", qrCode: "QR-NOX-TYT-MAT", shelfId: "shelf-b-1", quantity: 95, minStock: 20, status: "Aktif" },
+    { id: 4, type: "Kitap", name: "AYT Edebiyat Soru Bankası", brand: "Noxelera", category: "AYT", barcode: "869000000004", qrCode: "QR-NOX-AYT-EDB", shelfId: "shelf-b-1", quantity: 18, minStock: 20, status: "Aktif" },
+    { id: 5, type: "Deneme", name: "Paraf 8. Sınıf LGS Deneme", brand: "Paraf", category: "LGS", barcode: "869000000005", qrCode: "QR-PAR-LGS-001", shelfId: "shelf-a-2", quantity: 72, minStock: 20, status: "Aktif" },
   ],
   distributorTasks: [
     { id: 1, title: "Etki Dershanesi teslimatı", orderId: "ORD-1000", distributor: "Dağıtıcı 1", status: "Bekliyor", note: "LGS denemeleri teslim edilecek." },
