@@ -248,8 +248,14 @@ function isMiddleSchool(exam) {
   return ["5. Sınıf", "6. Sınıf", "7. Sınıf", "8. Sınıf"].includes(exam.classLevel);
 }
 
+function examIsHighSchool(exam) {
+  return groupForClass(exam?.classLevel || exam?.group || "") === "Lise" || exam?.group === "Lise";
+}
+
 function variantTotal(exam) {
-  return Object.values(exam.variants || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+  const summary = examStockSummary(exam || {});
+  if (summary.isHighSchool) return summary.kitapcikA + summary.kitapcikB;
+  return Object.values(ensureExamVariants(exam || {})).reduce((sum, value) => sum + Number(value || 0), 0);
 }
 
 function isGift(exam) {
@@ -257,16 +263,103 @@ function isGift(exam) {
 }
 
 function examStockSummary(exam) {
-  const variants = exam.variants || {};
+  const variants = exam?.variants || {};
+  const highSchool = examIsHighSchool(exam);
+
+  if (highSchool) {
+    const kitapcikA = Number(
+      variants["Kitapçık A"] ??
+      variants["Kitapcik A"] ??
+      variants["A Kitapçığı"] ??
+      variants["A Kitapcigi"] ??
+      variants["A"] ??
+      variants["A Sayısal"] ??
+      variants["A Sayisal"] ??
+      0
+    );
+    const kitapcikB = Number(
+      variants["Kitapçık B"] ??
+      variants["Kitapcik B"] ??
+      variants["B Kitapçığı"] ??
+      variants["B Kitapcigi"] ??
+      variants["B"] ??
+      variants["B Sayısal"] ??
+      variants["B Sayisal"] ??
+      0
+    );
+    const toplam = kitapcikA + kitapcikB;
+    return {
+      isHighSchool: true,
+      kitapcikA,
+      kitapcikB,
+      aSayisal: kitapcikA,
+      aSozel: 0,
+      bSayisal: kitapcikB,
+      bSozel: 0,
+      sayisal: toplam,
+      sozel: 0,
+      hazirlanabilir: toplam,
+      toplam,
+    };
+  }
+
   const aSayisal = Number(variants["A Sayısal"] ?? variants["A Sayisal"] ?? variants["Kitapçık A"] ?? variants["Kitapcik A"] ?? 0);
   const aSozel = Number(variants["A Sözel"] ?? variants["A Sozel"] ?? 0);
   const bSayisal = Number(variants["B Sayısal"] ?? variants["B Sayisal"] ?? variants["Kitapçık B"] ?? variants["Kitapcik B"] ?? 0);
   const bSozel = Number(variants["B Sözel"] ?? variants["B Sozel"] ?? 0);
   const sayisal = aSayisal + bSayisal;
   const sozel = aSozel + bSozel;
-  const hazirlanabilir = sozel > 0 ? Math.min(sayisal, sozel) : sayisal;
-  return { aSayisal, aSozel, bSayisal, bSozel, sayisal, sozel, hazirlanabilir };
+  const hazirlanabilir = Math.min(sayisal, sozel);
+  return { isHighSchool: false, aSayisal, aSozel, bSayisal, bSozel, kitapcikA: Math.min(aSayisal, aSozel), kitapcikB: Math.min(bSayisal, bSozel), sayisal, sozel, hazirlanabilir, toplam: aSayisal + aSozel + bSayisal + bSozel };
 }
+
+
+function normalizeVariantKey(key) {
+  const map = {
+    aSayisal: "A Sayısal",
+    aSozel: "A Sözel",
+    bSayisal: "B Sayısal",
+    bSozel: "B Sözel",
+    aKitapcik: "Kitapçık A",
+    bKitapcik: "Kitapçık B",
+    kitapcikA: "Kitapçık A",
+    kitapcikB: "Kitapçık B",
+    "A Sayisal": "A Sayısal",
+    "A Sozel": "A Sözel",
+    "B Sayisal": "B Sayısal",
+    "B Sozel": "B Sözel",
+    "Kitapçık A": "Kitapçık A",
+    "Kitapcik A": "Kitapçık A",
+    "A Kitapçığı": "Kitapçık A",
+    "A Kitapcigi": "Kitapçık A",
+    "Kitapçık B": "Kitapçık B",
+    "Kitapcik B": "Kitapçık B",
+    "B Kitapçığı": "Kitapçık B",
+    "B Kitapcigi": "Kitapçık B",
+  };
+  return map[key] || key || "A Sayısal";
+}
+
+
+function ensureExamVariants(exam) {
+  const variants = exam?.variants || {};
+  if (examIsHighSchool(exam)) {
+    const summary = examStockSummary(exam || {});
+    return {
+      "Kitapçık A": Number(summary.kitapcikA || 0),
+      "Kitapçık B": Number(summary.kitapcikB || 0),
+    };
+  }
+  const fallbackA = Number(variants["Kitapçık A"] ?? variants["Kitapcik A"] ?? variants["A Kitapçığı"] ?? variants["A Sayısal"] ?? variants["A Sayisal"] ?? 0);
+  const fallbackB = Number(variants["Kitapçık B"] ?? variants["Kitapcik B"] ?? variants["B Kitapçığı"] ?? variants["B Sayısal"] ?? variants["B Sayisal"] ?? 0);
+  return {
+    "A Sayısal": Number(variants["A Sayısal"] ?? variants["A Sayisal"] ?? fallbackA ?? 0),
+    "A Sözel": Number(variants["A Sözel"] ?? variants["A Sozel"] ?? variants["Kitapçık A Sözel"] ?? fallbackA ?? 0),
+    "B Sayısal": Number(variants["B Sayısal"] ?? variants["B Sayisal"] ?? fallbackB ?? 0),
+    "B Sözel": Number(variants["B Sözel"] ?? variants["B Sozel"] ?? variants["Kitapçık B Sözel"] ?? fallbackB ?? 0),
+  };
+}
+
 
 function orderAvailableTotal(exam) {
   if (isGift(exam)) return 0;
@@ -277,44 +370,62 @@ function orderAvailableTotal(exam) {
 function deductionPlanForOrder(exam, quantity) {
   const qty = Number(quantity || 0);
   if (qty <= 0) return {};
-  const variants = exam.variants || {};
-  const hasASet = variants["A Sayısal"] !== undefined || variants["A Sözel"] !== undefined;
-  const hasBSet = variants["B Sayısal"] !== undefined || variants["B Sözel"] !== undefined;
-  if (hasASet || hasBSet) {
+
+  if (examIsHighSchool(exam)) {
+    const variants = ensureExamVariants(exam);
     let remaining = qty;
-    const aReady = Math.min(Number(variants["A Sayısal"] || 0), Number(variants["A Sözel"] || 0));
-    const bReady = Math.min(Number(variants["B Sayısal"] || 0), Number(variants["B Sözel"] || 0));
-    const aCount = Math.min(Math.ceil(qty / 2), aReady);
+    const aStock = Number(variants["Kitapçık A"] || 0);
+    const bStock = Number(variants["Kitapçık B"] || 0);
+    const aCount = Math.min(Math.ceil(qty / 2), aStock);
     remaining -= aCount;
-    const bCount = Math.min(remaining, bReady);
+    const bCount = Math.min(Math.floor(qty / 2), bStock);
     remaining -= bCount;
-    const extraA = Math.min(remaining, Math.max(0, aReady - aCount));
+    const extraA = Math.min(remaining, Math.max(0, aStock - aCount));
     const finalA = aCount + extraA;
     remaining -= extraA;
+    const extraB = Math.min(remaining, Math.max(0, bStock - bCount));
+    const finalB = bCount + extraB;
     const plan = {};
-    if (finalA > 0) {
-      plan["A Sayısal"] = finalA;
-      plan["A Sözel"] = finalA;
-    }
-    if (bCount > 0) {
-      plan["B Sayısal"] = bCount;
-      plan["B Sözel"] = bCount;
-    }
+    if (finalA > 0) plan["Kitapçık A"] = finalA;
+    if (finalB > 0) plan["Kitapçık B"] = finalB;
     return plan;
   }
-  return { Toplam: qty };
+
+  const variants = ensureExamVariants(exam);
+  let remaining = qty;
+  const aReady = Math.min(Number(variants["A Sayısal"] || 0), Number(variants["A Sözel"] || 0));
+  const bReady = Math.min(Number(variants["B Sayısal"] || 0), Number(variants["B Sözel"] || 0));
+  const aCount = Math.min(Math.ceil(qty / 2), aReady);
+  remaining -= aCount;
+  const bCount = Math.min(remaining, bReady);
+  remaining -= bCount;
+  const extraA = Math.min(remaining, Math.max(0, aReady - aCount));
+  const finalA = aCount + extraA;
+  remaining -= extraA;
+  const plan = {};
+  if (finalA > 0) {
+    plan["A Sayısal"] = finalA;
+    plan["A Sözel"] = finalA;
+  }
+  if (bCount > 0) {
+    plan["B Sayısal"] = bCount;
+    plan["B Sözel"] = bCount;
+  }
+  return plan;
 }
+
 
 function canDeduct(exam, plan) {
   if (!exam) return false;
+  const variants = ensureExamVariants(exam);
   return Object.entries(plan).every(([key, qty]) => {
     if (key === "Toplam") return variantTotal(exam) >= qty;
-    return Number(exam.variants?.[key] || 0) >= qty;
+    return Number(variants?.[key] || 0) >= qty;
   });
 }
 
 function applyDeduction(exam, plan) {
-  const next = { ...exam, variants: { ...(exam.variants || {}) } };
+  const next = { ...exam, variants: { ...ensureExamVariants(exam) } };
   if (plan.Toplam !== undefined) {
     const firstKey = Object.keys(next.variants)[0];
     if (firstKey) next.variants[firstKey] = Math.max(0, Number(next.variants[firstKey] || 0) - Number(plan.Toplam || 0));
@@ -328,11 +439,11 @@ function applyDeduction(exam, plan) {
 
 function hasCriticalStock(exam, threshold = CRITICAL_STOCK_THRESHOLD) {
   if (isGift(exam) || orderAvailableTotal(exam) <= 0) return false;
-  return Object.values(exam.variants || {}).some((count) => count > 0 && count < threshold);
+  return Object.values(ensureExamVariants(exam)).some((count) => count > 0 && count < threshold);
 }
 
 function criticalText(exam, threshold = CRITICAL_STOCK_THRESHOLD) {
-  const critical = Object.entries(exam.variants || {})
+  const critical = Object.entries(ensureExamVariants(exam))
     .filter(([, count]) => Number(count) > 0 && Number(count) < threshold)
     .map(([key, count]) => `${key}: ${count}`)
     .join(" | ");
@@ -358,23 +469,18 @@ function examIsAvailable(exam) {
 }
 
 function normalizeExamStatus(exam) {
-  const active = isGift(exam) ? false : hasAnyStock(exam) ? exam.active !== false : false;
-  const variants = exam.variants || {};
-  const normalizedVariants = {
-    "A Sayısal": Number(variants["A Sayısal"] ?? variants["A Sayisal"] ?? variants["Kitapçık A"] ?? variants["Kitapcik A"] ?? 0),
-    "A Sözel": Number(variants["A Sözel"] ?? variants["A Sozel"] ?? 0),
-    "B Sayısal": Number(variants["B Sayısal"] ?? variants["B Sayisal"] ?? variants["Kitapçık B"] ?? variants["Kitapcik B"] ?? 0),
-    "B Sözel": Number(variants["B Sözel"] ?? variants["B Sozel"] ?? 0),
-  };
-  return {
+  const normalizedVariants = ensureExamVariants(exam);
+  const normalizedExam = {
     ...exam,
     barcode: "",
     barcodeA: exam.barcodeA || "",
     barcodeB: exam.barcodeB || "",
     variants: normalizedVariants,
-    active,
   };
+  const active = isGift(normalizedExam) ? false : hasAnyStock(normalizedExam) ? exam.active !== false : false;
+  return { ...normalizedExam, active };
 }
+
 
 function nextId(prefix) {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 999)}`;
@@ -634,7 +740,18 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
 
   const updateExam = (examId, updater, movement) => {
     saveWarehouse((base) => {
-      let next = { ...base, legacyExams: base.legacyExams.map((exam) => String(exam.id) === String(examId) ? updater(exam) : exam) };
+      let updatedExam = null;
+      let next = {
+        ...base,
+        legacyExams: base.legacyExams.map((exam) => {
+          if (String(exam.id) !== String(examId)) return exam;
+          updatedExam = updater(exam);
+          return updatedExam;
+        }),
+      };
+      if (updatedExam) {
+        setSelectedExam((selected) => (String(selected?.id) === String(examId) ? updatedExam : selected));
+      }
       if (movement) next = addMovement(next, movement);
       return next;
     });
@@ -692,7 +809,9 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
       barcode: "",
       barcodeA: productForm.barcodeA.trim() || `EX-${Date.now()}-A`,
       barcodeB: productForm.barcodeB.trim() || `EX-${Date.now()}-B`,
-      variants: { "A Sayısal": Number(productForm.aSayisal || 0), "A Sözel": Number(productForm.aSozel || 0), "B Sayısal": Number(productForm.bSayisal || 0), "B Sözel": Number(productForm.bSozel || 0) },
+      variants: isMiddle
+        ? { "A Sayısal": Number(productForm.aSayisal || 0), "A Sözel": Number(productForm.aSozel || 0), "B Sayısal": Number(productForm.bSayisal || 0), "B Sözel": Number(productForm.bSozel || 0) }
+        : { "Kitapçık A": Number(productForm.kitapcikA || 0), "Kitapçık B": Number(productForm.kitapcikB || 0) },
       giftDate: "",
       isGiftRecord: false,
       active: true,
@@ -725,12 +844,54 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
   };
 
   const changeVariant = (exam, key, delta, note = "") => {
+    const variantKey = normalizeVariantKey(key);
     updateExam(exam.id, (current) => {
-      const variants = { ...current.variants, [key]: Math.max(0, Number(current.variants?.[key] || 0) + Number(delta || 0)) };
+      const normalized = ensureExamVariants(current);
+      const variants = {
+        ...normalized,
+        [variantKey]: Math.max(0, Number(normalized?.[variantKey] || 0) + Number(delta || 0)),
+      };
       const next = { ...current, variants };
       return normalizeExamStatus(next);
-    }, makeMovement({ action: delta >= 0 ? "Stok girişi" : "Stok çıkışı", examName: exam.name, detail: `${key}: ${Math.abs(delta)} adet ${note}` }));
+    }, makeMovement({ action: delta >= 0 ? "Stok girişi" : "Stok çıkışı", examName: exam.name, detail: `${variantKey}: ${Math.abs(delta)} adet ${note}` }));
   };
+
+  const bulkAddExamSets = (exam, totalCount) => {
+    const amount = Number(totalCount || 0);
+    if (!amount || amount < 1) {
+      alert("Lütfen geçerli bir deneme adedi girin.");
+      return;
+    }
+    const aCount = Math.ceil(amount / 2);
+    const bCount = Math.floor(amount / 2);
+    const highSchool = examIsHighSchool(exam);
+    updateExam(
+      exam.id,
+      (current) => {
+        const normalized = ensureExamVariants(current);
+        const variants = highSchool
+          ? {
+              ...normalized,
+              "Kitapçık A": Number(normalized["Kitapçık A"] || 0) + aCount,
+              "Kitapçık B": Number(normalized["Kitapçık B"] || 0) + bCount,
+            }
+          : {
+              ...normalized,
+              "A Sayısal": Number(normalized["A Sayısal"] || 0) + aCount,
+              "A Sözel": Number(normalized["A Sözel"] || 0) + aCount,
+              "B Sayısal": Number(normalized["B Sayısal"] || 0) + bCount,
+              "B Sözel": Number(normalized["B Sözel"] || 0) + bCount,
+            };
+        return normalizeExamStatus({ ...current, variants, active: true });
+      },
+      makeMovement({
+        action: "Toplu deneme girişi",
+        examName: exam.name,
+        detail: `${amount} deneme eklendi. A kitapçığı: ${aCount}, B kitapçığı: ${bCount}.`,
+      })
+    );
+  };
+
 
   const changeBookStock = (book, delta, note = "") => {
     updateBook(book.id, (current) => ({ ...current, stock: Math.max(0, Number(current.stock || 0) + Number(delta || 0)) }), makeMovement({ action: delta >= 0 ? "Kitap stok girişi" : "Kitap stok çıkışı", examName: book.name, detail: `${Math.abs(delta)} adet ${note}` }));
@@ -748,6 +909,25 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
 
   const toggleExam = (exam) => updateExam(exam.id, (current) => ({ ...current, active: !current.active }), makeMovement({ action: exam.active ? "Deneme pasife alındı" : "Deneme aktif edildi", examName: exam.name, detail: "Durum değiştirildi." }));
   const toggleBook = (book) => updateBook(book.id, (current) => ({ ...current, active: !current.active }), makeMovement({ action: book.active ? "Kitap pasife alındı" : "Kitap aktif edildi", examName: book.name, detail: "Durum değiştirildi." }));
+
+  const resetExamStock = (exam) => {
+    if (!confirmRisk(`“${exam.name}” stokları tamamen sıfırlanacak ve deneme pasife düşecek. Emin misin?`)) return;
+    updateExam(
+      exam.id,
+      (current) =>
+        normalizeExamStatus({
+          ...current,
+          variants: Object.fromEntries(Object.keys(current.variants || {}).map((key) => [key, 0])),
+          active: false,
+        }),
+      makeMovement({
+        action: "Deneme stokları sıfırlandı",
+        examName: exam.name,
+        detail: "A/B sayısal-sözel tüm stoklar sıfırlandı ve deneme pasife alındı.",
+      })
+    );
+    setSelectedExam(null);
+  };
 
   const markGift = (exam) => {
     updateExam(exam.id, (current) => ({
@@ -1249,7 +1429,7 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
       )}
       {activeContent()}
 
-      {selectedExam && <ExamDetailModal exam={selectedExam} shelves={warehouse.shelves} shelfLabel={shelfLabel} onClose={() => setSelectedExam(null)} onVariantChange={changeVariant} onMoveShelf={moveExamShelf} onToggle={toggleExam} onGift={markGift} onDelete={deleteExam} onResetStock={resetExamStock} onEdit={openEditExam} movements={warehouse.movements.filter((m) => m.examName === selectedExam.name)} />}
+      {selectedExam && <ExamDetailModal exam={selectedExam} shelves={warehouse.shelves} shelfLabel={shelfLabel} onClose={() => setSelectedExam(null)} onVariantChange={changeVariant} onBulkAdd={bulkAddExamSets} onMoveShelf={moveExamShelf} onToggle={toggleExam} onGift={markGift} onDelete={deleteExam} onResetStock={resetExamStock} onEdit={openEditExam} movements={warehouse.movements.filter((m) => m.examName === selectedExam.name)} />}
       {selectedBook && <BookDetailModal book={selectedBook} shelves={warehouse.shelves} onClose={() => setSelectedBook(null)} onStockChange={changeBookStock} onMoveShelf={moveBookShelf} onToggle={toggleBook} onDelete={deleteBook} onEdit={openEditBook} />}
       {selectedShelf && <ShelfDetailModal shelf={selectedShelf} products={productsForShelf(selectedShelf)} onClose={() => setSelectedShelf(null)} onExamOpen={setSelectedExam} onBookOpen={setSelectedBook} onEdit={openEditShelf} onToggle={toggleShelf} />}
       {selectedOrder && <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} onPrepare={prepareOrder} onDeliver={deliverOrder} onCancel={cancelOrder} onEdit={openEditOrder} exam={warehouse.legacyExams.find((e) => e.id === selectedOrder.examId)} />}
@@ -1273,9 +1453,14 @@ export default function WarehousePanel({ orders = [], setOrders, warehouseData, 
 
 function AddExamForm({ form, setForm, shelves, onSave }) {
   const classOptions = [...CLASS_GROUPS.Ortaokul, ...CLASS_GROUPS.Lise];
-  const summary = examStockSummary({ variants: { "A Sayısal": form.aSayisal, "A Sözel": form.aSozel, "B Sayısal": form.bSayisal, "B Sözel": form.bSozel } });
-  return <div className="grid gap-4"><SelectInput label="Sınıf" value={form.classLevel} onChange={(v) => setForm((s) => ({ ...s, classLevel: v, group: groupForClass(v) }))} options={classOptions} /><TextInput label="Deneme adı" value={form.name} onChange={(v) => setForm((s) => ({ ...s, name: v }))} /><div className="grid gap-3 sm:grid-cols-2"><TextInput label="A kitapçığı barkodu" value={form.barcodeA || ""} onChange={(v) => setForm((s) => ({ ...s, barcodeA: v }))} /><TextInput label="B kitapçığı barkodu" value={form.barcodeB || ""} onChange={(v) => setForm((s) => ({ ...s, barcodeB: v }))} /></div><SelectInput label="Raf" value={form.shelfId} onChange={(v) => setForm((s) => ({ ...s, shelfId: String(v) }))} options={shelves.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}` }))} /><div className="rounded-[1.6rem] bg-slate-50 p-4 ring-1 ring-slate-100"><SectionTitle title="Stok dağılımı" subtitle="A/B kitapçığı için sayısal ve sözel adetleri girilir." /><div className="grid gap-3 sm:grid-cols-2"><TextInput label="A Sayısal" type="number" value={form.aSayisal} onChange={(v) => setForm((s) => ({ ...s, aSayisal: v }))} /><TextInput label="A Sözel" type="number" value={form.aSozel} onChange={(v) => setForm((s) => ({ ...s, aSozel: v }))} /><TextInput label="B Sayısal" type="number" value={form.bSayisal} onChange={(v) => setForm((s) => ({ ...s, bSayisal: v }))} /><TextInput label="B Sözel" type="number" value={form.bSozel} onChange={(v) => setForm((s) => ({ ...s, bSozel: v }))} /></div><div className="mt-3 flex flex-wrap gap-2"><Pill>Sayısal {summary.sayisal}</Pill><Pill>Sözel {summary.sozel}</Pill><Pill tone="green">Hazırlanabilir {summary.hazirlanabilir}</Pill></div></div><button onClick={onSave} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Kaydet</button></div>;
+  const highSchool = groupForClass(form.classLevel) === "Lise";
+  const summary = highSchool
+    ? examStockSummary({ classLevel: form.classLevel, group: "Lise", variants: { "Kitapçık A": form.kitapcikA, "Kitapçık B": form.kitapcikB } })
+    : examStockSummary({ classLevel: form.classLevel, group: "Ortaokul", variants: { "A Sayısal": form.aSayisal, "A Sözel": form.aSozel, "B Sayısal": form.bSayisal, "B Sözel": form.bSozel } });
+
+  return <div className="grid gap-4"><SelectInput label="Sınıf" value={form.classLevel} onChange={(v) => setForm((s) => ({ ...s, classLevel: v, group: groupForClass(v) }))} options={classOptions} /><TextInput label="Deneme adı" value={form.name} onChange={(v) => setForm((s) => ({ ...s, name: v }))} /><div className="grid gap-3 sm:grid-cols-2"><TextInput label="A kitapçığı barkodu" value={form.barcodeA || ""} onChange={(v) => setForm((s) => ({ ...s, barcodeA: v }))} /><TextInput label="B kitapçığı barkodu" value={form.barcodeB || ""} onChange={(v) => setForm((s) => ({ ...s, barcodeB: v }))} /></div><SelectInput label="Raf" value={form.shelfId} onChange={(v) => setForm((s) => ({ ...s, shelfId: String(v) }))} options={shelves.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}` }))} /><div className="rounded-[1.6rem] bg-slate-50 p-4 ring-1 ring-slate-100"><SectionTitle title="Stok dağılımı" subtitle={highSchool ? "Lise için sadece A ve B kitapçığı adedi girilir." : "Ortaokul için A/B kitapçığı sayısal ve sözel adetleri girilir."} />{highSchool ? <div className="grid gap-3 sm:grid-cols-2"><TextInput label="A Kitapçığı" type="number" value={form.kitapcikA} onChange={(v) => setForm((s) => ({ ...s, kitapcikA: v }))} /><TextInput label="B Kitapçığı" type="number" value={form.kitapcikB} onChange={(v) => setForm((s) => ({ ...s, kitapcikB: v }))} /></div> : <div className="grid gap-3 sm:grid-cols-2"><TextInput label="A Sayısal" type="number" value={form.aSayisal} onChange={(v) => setForm((s) => ({ ...s, aSayisal: v }))} /><TextInput label="A Sözel" type="number" value={form.aSozel} onChange={(v) => setForm((s) => ({ ...s, aSozel: v }))} /><TextInput label="B Sayısal" type="number" value={form.bSayisal} onChange={(v) => setForm((s) => ({ ...s, bSayisal: v }))} /><TextInput label="B Sözel" type="number" value={form.bSozel} onChange={(v) => setForm((s) => ({ ...s, bSozel: v }))} /></div>}<div className="mt-3 flex flex-wrap gap-2">{highSchool ? <><Pill>A {summary.kitapcikA}</Pill><Pill>B {summary.kitapcikB}</Pill><Pill tone="green">Hazırlanabilir {summary.hazirlanabilir}</Pill></> : <><Pill>Sayısal {summary.sayisal}</Pill><Pill>Sözel {summary.sozel}</Pill><Pill tone="green">Hazırlanabilir {summary.hazirlanabilir}</Pill></>}</div></div><button onClick={onSave} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Kaydet</button></div>;
 }
+
 
 function AddBookForm({ form, setForm, shelves, onSave }) {
   const classOptions = [...CLASS_GROUPS.Ortaokul, ...CLASS_GROUPS.Lise];
@@ -1313,6 +1498,7 @@ function ExamStockCard({ exam, shelfLabel, onOpen, onGift, compact = false }) {
   const available = examIsAvailable(exam);
   const passive = exam.active === false || !hasAnyStock(exam);
   const summary = examStockSummary(exam);
+  const highSchool = summary.isHighSchool;
   return (
     <div className={`rounded-[1.6rem] bg-white p-4 shadow-sm ring-1 ring-slate-200 transition ${passive ? "opacity-45 grayscale" : ""}`}>
       <button onClick={onOpen} className="w-full text-left">
@@ -1326,9 +1512,19 @@ function ExamStockCard({ exam, shelfLabel, onOpen, onGift, compact = false }) {
               <span>B barkod: {exam.barcodeB || "-"}</span>
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
-              <div className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-black text-blue-700">Sayısal {summary.sayisal}</div>
-              <div className="rounded-xl bg-violet-50 px-3 py-2 text-xs font-black text-violet-700">Sözel {summary.sozel}</div>
-              <div className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">Hazırlanabilir {summary.hazirlanabilir}</div>
+              {highSchool ? (
+                <>
+                  <div className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-black text-blue-700">A Kitapçığı {summary.kitapcikA}</div>
+                  <div className="rounded-xl bg-violet-50 px-3 py-2 text-xs font-black text-violet-700">B Kitapçığı {summary.kitapcikB}</div>
+                  <div className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">Hazırlanabilir {summary.hazirlanabilir}</div>
+                </>
+              ) : (
+                <>
+                  <div className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-black text-blue-700">Sayısal {summary.sayisal}</div>
+                  <div className="rounded-xl bg-violet-50 px-3 py-2 text-xs font-black text-violet-700">Sözel {summary.sozel}</div>
+                  <div className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">Hazırlanabilir {summary.hazirlanabilir}</div>
+                </>
+              )}
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
               <Pill tone={available ? "green" : "slate"}>{available ? "Mevcut" : "Pasif / stok yok"}</Pill>
@@ -1348,6 +1544,7 @@ function ExamStockCard({ exam, shelfLabel, onOpen, onGift, compact = false }) {
   );
 }
 
+
 function BookStockCard({ book, compact = false, onOpen }) {
   const critical = Number(book.stock || 0) > 0 && Number(book.stock || 0) < CRITICAL_STOCK_THRESHOLD;
   return <div className="rounded-[1.6rem] bg-white p-4 shadow-sm ring-1 ring-slate-200"><button onClick={onOpen} className="w-full text-left"><div className="flex items-start gap-3"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-violet-700"><BookOpen size={24} /></div><div className="min-w-0 flex-1"><p className="font-black text-slate-950">{book.name}</p><p className="mt-1 text-xs font-bold text-slate-500">{book.group} • {book.classLevel} • {book.shelf}</p><div className="mt-2 flex flex-wrap gap-2"><Pill tone="purple">Kitap</Pill>{critical && <Pill tone="amber">Kritik</Pill>}</div></div><div className="text-right"><p className="text-3xl font-black text-slate-950">{book.stock}</p><p className="text-[11px] font-black text-slate-400">stok</p></div></div></button>{!compact && <button onClick={onOpen} className="mt-4 w-full rounded-2xl bg-violet-50 px-3 py-2 text-xs font-black text-violet-700 ring-1 ring-violet-100">Detay</button>}</div>;
@@ -1357,44 +1554,148 @@ function MovementCard({ movement, onDelete }) {
   return <div className="rounded-[1.6rem] bg-white p-4 ring-1 ring-slate-200"><div className="flex items-start justify-between gap-3"><div className="flex items-start gap-3"><Clock size={18} className="mt-1 text-blue-700" /><div><p className="font-black text-slate-950">{movement.action}</p><p className="mt-1 text-sm font-bold text-slate-500">{movement.examName}</p><p className="mt-1 text-xs font-bold text-slate-400">{movement.detail} • {movement.createdAt}</p></div></div>{onDelete && <button onClick={onDelete} className="rounded-2xl bg-red-50 px-3 py-2 text-xs font-black text-red-700 ring-1 ring-red-100">Çöpe taşı</button>}</div></div>;
 }
 
-function ExamDetailModal({ exam, shelves = [], shelfLabel, onClose, onVariantChange, onMoveShelf, onToggle, onGift, onDelete, onResetStock, onEdit, movements = [] }) {
+function ExamDetailModal({ exam, shelves = [], shelfLabel, onClose, onVariantChange, onBulkAdd, onMoveShelf, onToggle, onGift, onDelete, onResetStock, onEdit, movements = [] }) {
   const safeExam = exam || {};
+  const safeShelfLabel = typeof shelfLabel === "function" ? shelfLabel : () => "Raf yok";
+  const highSchool = examIsHighSchool(safeExam);
   const normalizedVariants = ensureExamVariants(safeExam);
-  const [delta, setDelta] = useState({});
-  const [moveShelf, setMoveShelf] = useState(String(safeExam.shelfId || shelves[0]?.id || ""));
   const summary = examStockSummary({ ...safeExam, variants: normalizedVariants });
-  const variantLabels = {
-    aSayisal: "A Kitapçığı Sayısal",
-    aSozel: "A Kitapçığı Sözel",
-    bSayisal: "B Kitapçığı Sayısal",
-    bSozel: "B Kitapçığı Sözel",
-  };
+  const [delta, setDelta] = useState({ aSayisal: "", aSozel: "", bSayisal: "", bSozel: "", aKitapcik: "", bKitapcik: "" });
+  const [bulkCount, setBulkCount] = useState("");
+  const [moveShelf, setMoveShelf] = useState(String(safeExam.shelfId || shelves?.[0]?.id || ""));
 
-  const safeVariantChange = (key, direction) => {
+  const variantRows = highSchool
+    ? [
+        ["aKitapcik", "A Kitapçığı"],
+        ["bKitapcik", "B Kitapçığı"],
+      ]
+    : [
+        ["aSayisal", "A Sayısal"],
+        ["aSozel", "A Sözel"],
+        ["bSayisal", "B Sayısal"],
+        ["bSozel", "B Sözel"],
+      ];
+
+  const changeSafe = (key, direction) => {
     const amount = Number(delta[key] || 0);
-    if (!amount || amount < 0) return alert("Lütfen geçerli bir adet girin.");
+    if (!amount || amount < 1) {
+      alert("Lütfen geçerli bir adet girin.");
+      return;
+    }
     onVariantChange?.(safeExam, key, direction * amount, direction > 0 ? "manuel giriş" : "manuel çıkış");
     setDelta((current) => ({ ...current, [key]: "" }));
   };
 
+  const bulkAddSafe = () => {
+    const amount = Number(bulkCount || 0);
+    if (!amount || amount < 1) {
+      alert("Lütfen geçerli bir deneme adedi girin.");
+      return;
+    }
+    onBulkAdd?.(safeExam, amount);
+    setBulkCount("");
+  };
+
+  const selectedShelfLabel = safeExam.shelf || safeShelfLabel(safeExam.shelfId) || "Raf yok";
+
   return (
-    <Modal title="Deneme Detayı" subtitle={`${safeExam.classLevel || "Sınıf yok"} • ${safeExam.shelf || shelfLabel(safeExam.shelfId) || "Raf yok"}`} onClose={onClose} wide>
+    <Modal title="Deneme Detayı" subtitle={`${safeExam.name || "Deneme"} • ${safeExam.classLevel || "Sınıf yok"} • ${selectedShelfLabel}`} onClose={onClose} wide>
       <div className="grid gap-5">
         <div className="grid gap-3 md:grid-cols-3">
-          <DashboardTile title="Sayısal" value={summary.sayisal} icon={<Package size={22} />} />
-          <DashboardTile title="Sözel" value={summary.sozel} icon={<BookOpen size={22} />} tone="purple" />
-          <DashboardTile title="Hazırlanabilir" value={summary.hazirlanabilir} icon={<ClipboardCheck size={22} />} tone="green" />
+          {highSchool ? (
+            <>
+              <div className="rounded-[1.6rem] bg-blue-50 p-4 ring-1 ring-blue-100">
+                <p className="text-xs font-black uppercase text-blue-700">A Kitapçığı</p>
+                <p className="mt-1 text-3xl font-black text-slate-950">{summary.kitapcikA}</p>
+              </div>
+              <div className="rounded-[1.6rem] bg-purple-50 p-4 ring-1 ring-purple-100">
+                <p className="text-xs font-black uppercase text-purple-700">B Kitapçığı</p>
+                <p className="mt-1 text-3xl font-black text-slate-950">{summary.kitapcikB}</p>
+              </div>
+              <div className="rounded-[1.6rem] bg-emerald-50 p-4 ring-1 ring-emerald-100">
+                <p className="text-xs font-black uppercase text-emerald-700">Hazırlanabilir</p>
+                <p className="mt-1 text-3xl font-black text-slate-950">{summary.hazirlanabilir}</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="rounded-[1.6rem] bg-blue-50 p-4 ring-1 ring-blue-100">
+                <p className="text-xs font-black uppercase text-blue-700">Sayısal</p>
+                <p className="mt-1 text-3xl font-black text-slate-950">{summary.sayisal}</p>
+              </div>
+              <div className="rounded-[1.6rem] bg-purple-50 p-4 ring-1 ring-purple-100">
+                <p className="text-xs font-black uppercase text-purple-700">Sözel</p>
+                <p className="mt-1 text-3xl font-black text-slate-950">{summary.sozel}</p>
+              </div>
+              <div className="rounded-[1.6rem] bg-emerald-50 p-4 ring-1 ring-emerald-100">
+                <p className="text-xs font-black uppercase text-emerald-700">Hazırlanabilir</p>
+                <p className="mt-1 text-3xl font-black text-slate-950">{summary.hazirlanabilir}</p>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-[1.6rem] bg-blue-50 p-4 ring-1 ring-blue-100">
-            <p className="text-xs font-black uppercase text-blue-700">A Kitapçığı Barkodu</p>
+          <div className="rounded-[1.6rem] bg-slate-50 p-4 ring-1 ring-slate-100">
+            <p className="text-xs font-black uppercase text-slate-500">A Kitapçığı Barkodu</p>
             <p className="mt-2 break-all text-lg font-black text-slate-950">{safeExam.barcodeA || "-"}</p>
           </div>
-          <div className="rounded-[1.6rem] bg-purple-50 p-4 ring-1 ring-purple-100">
-            <p className="text-xs font-black uppercase text-purple-700">B Kitapçığı Barkodu</p>
+          <div className="rounded-[1.6rem] bg-slate-50 p-4 ring-1 ring-slate-100">
+            <p className="text-xs font-black uppercase text-slate-500">B Kitapçığı Barkodu</p>
             <p className="mt-2 break-all text-lg font-black text-slate-950">{safeExam.barcodeB || "-"}</p>
           </div>
+        </div>
+
+        <div className="grid gap-3 rounded-[1.6rem] bg-blue-50 p-4 ring-1 ring-blue-100 md:grid-cols-[1fr_auto] md:items-end">
+          <div>
+            <p className="text-sm font-black text-blue-900">Toplu deneme girişi</p>
+            <p className="mt-1 text-xs font-bold text-blue-700">Girilen adet A ve B kitapçıklarına otomatik bölünür. Tek sayı girilirse fazlalık A kitapçığına eklenir.</p>
+            <input
+              type="number"
+              min="1"
+              value={bulkCount}
+              onChange={(e) => setBulkCount(e.target.value)}
+              placeholder="Örn: 30 deneme"
+              className="mt-3 w-full rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-black outline-none focus:border-blue-400"
+            />
+          </div>
+          <button onClick={bulkAddSafe} className="rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-sm">Toplu ekle</button>
+        </div>
+
+        <div className="rounded-[1.6rem] bg-white p-4 ring-1 ring-slate-200">
+          <SectionTitle
+            title={highSchool ? "A/B kitapçık stokları" : "A/B sayısal-sözel stokları"}
+            subtitle={highSchool ? "Lisede yalnızca A ve B kitapçığı adedi tutulur." : "Toplam sayısal, toplam sözel ve hazırlanabilir adet otomatik hesaplanır."}
+          />
+          <div className="grid gap-3 md:grid-cols-2">
+            {variantRows.map(([key, label]) => (
+              <div key={key} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-black text-slate-950">{label}</p>
+                    <p className="text-sm font-bold text-slate-500">Mevcut: {Number(normalizedVariants[normalizeVariantKey(key)] || 0)}</p>
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    value={delta[key] || ""}
+                    onChange={(e) => setDelta((current) => ({ ...current, [key]: e.target.value }))}
+                    placeholder="Adet"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-black outline-none focus:border-blue-400 sm:w-28"
+                  />
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button onClick={() => changeSafe(key, 1)} className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">Ekle</button>
+                  <button onClick={() => changeSafe(key, -1)} className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 ring-1 ring-amber-100">Düşür</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+          <SelectInput label="Raf değiştir" value={moveShelf} onChange={setMoveShelf} options={(shelves || []).map((s) => ({ value: s.id, label: `${s.code} - ${s.name}` }))} />
+          <button onClick={() => onMoveShelf?.(safeExam, moveShelf)} className="self-end rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Taşı</button>
         </div>
 
         <div className="grid gap-2 sm:grid-cols-5">
@@ -1406,51 +1707,14 @@ function ExamDetailModal({ exam, shelves = [], shelfLabel, onClose, onVariantCha
         </div>
 
         <div className="rounded-[1.6rem] bg-slate-50 p-4 ring-1 ring-slate-100">
-          <SectionTitle title="A/B sayısal-sözel stokları" subtitle="Hazırlanabilir adet = sayısal ve sözelden birlikte hazırlanabilecek tam deneme sayısı." />
-          <div className="mb-3 flex flex-wrap gap-2">
-            <Pill>Sayısal {summary.sayisal}</Pill>
-            <Pill>Sözel {summary.sozel}</Pill>
-            <Pill tone="green">Hazırlanabilir {summary.hazirlanabilir}</Pill>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {Object.entries(normalizedVariants).map(([key, value]) => (
-              <div key={key} className="rounded-2xl bg-white p-4 ring-1 ring-slate-100">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="font-black text-slate-950">{variantLabels[key] || key}</p>
-                    <p className="text-sm font-bold text-slate-500">Mevcut: {Number(value || 0)}</p>
-                  </div>
-                  <input
-                    type="number"
-                    min="0"
-                    value={delta[key] || ""}
-                    onChange={(e) => setDelta((current) => ({ ...current, [key]: e.target.value }))}
-                    placeholder="Adet"
-                    className="w-24 rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-black outline-none focus:border-blue-400"
-                  />
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <button onClick={() => safeVariantChange(key, 1)} className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">Ekle</button>
-                  <button onClick={() => safeVariantChange(key, -1)} className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 ring-1 ring-amber-100">Düşür</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-          <SelectInput label="Raf değiştir" value={moveShelf} onChange={setMoveShelf} options={shelves.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}` }))} />
-          <button onClick={() => onMoveShelf?.(safeExam, moveShelf)} className="self-end rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Taşı</button>
-        </div>
-
-        <div className="rounded-[1.6rem] bg-slate-50 p-4 ring-1 ring-slate-100">
           <SectionTitle title="Seyir geçmişi" subtitle="Bu ürünle ilgili hareketler" />
-          {movements.length === 0 ? <EmptyBox text="Bu ürün için hareket yok." /> : <div className="grid gap-2">{movements.map((m) => <MovementCard key={m.id} movement={m} />)}</div>}
+          {Array.isArray(movements) && movements.length > 0 ? <div className="grid gap-2">{movements.map((m) => <MovementCard key={m.id} movement={m} />)}</div> : <EmptyBox text="Bu ürün için hareket yok." />}
         </div>
       </div>
     </Modal>
   );
 }
+
 
 function BookDetailModal({ book, shelves, onClose, onStockChange, onMoveShelf, onToggle, onDelete, onEdit }) {
   const [delta, setDelta] = useState(0);
