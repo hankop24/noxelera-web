@@ -339,7 +339,20 @@ export default function AdminPanel({ customers, setCustomers, exams, setExams, o
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-6 rounded-b-3xl bg-gradient-to-t from-slate-950 via-slate-950/85 to-transparent" />
           <div className="admin-side-scroll h-full overflow-y-auto pr-2 pb-6">
             <div className="grid gap-2 rounded-[1.6rem] bg-white/[0.03] p-1">
-              {visibleTabs.map((tab) => <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black transition ${activeTab === tab.id ? "bg-blue-700 text-white shadow-[0_12px_35px_rgba(37,99,235,0.35)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}>{tab.icon}{tab.label}</button>)}
+              {visibleTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex min-h-[50px] items-center gap-3 rounded-2xl px-4 py-0 text-sm font-black leading-none transition ${activeTab === tab.id ? "bg-blue-700 text-white shadow-[0_12px_35px_rgba(37,99,235,0.35)]" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}
+                >
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center leading-none">
+                    {tab.icon}
+                  </span>
+                  <span className="flex min-h-[20px] items-center leading-none">
+                    {tab.label}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
