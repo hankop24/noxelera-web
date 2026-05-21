@@ -9,3 +9,25 @@ html {
 body {
   margin: 0;
 }
+
+/* Sidebar menu vertical alignment fix */
+.sidebar-menu-button {
+  height: 48px !important;
+  min-height: 48px !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow: visible !important;
+  line-height: normal !important;
+}
+
+.sidebar-menu-icon,
+.sidebar-menu-label {
+  display: flex !important;
+  align-items: center !important;
+  overflow: visible !important;
+  line-height: 1.35 !important;
+}
+
+.sidebar-menu-label {
+  padding-top: 1px !important;
+}
