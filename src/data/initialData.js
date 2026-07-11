@@ -2,6 +2,7 @@ export const LOGO_SRC = "/noxelera-logo.png";
 export const MADE_BY_TEXT = "Developed by Han Kop";
 
 export const MONTH_NAMES = [
+  "temmuz",
   "agustos",
   "eylul",
   "ekim",
@@ -14,6 +15,7 @@ export const MONTH_NAMES = [
   "mayis",
   "haziran",
   "temmuz",
+  "agustos",
 ];
 
 export const MONTH_LABELS = {
@@ -34,20 +36,40 @@ export const MONTH_LABELS = {
 export function getDefaultSeasonStartYear() {
   const now = new Date();
   const monthIndex = now.getMonth();
-  return monthIndex >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+  return monthIndex >= 6 ? now.getFullYear() : now.getFullYear() - 1;
 }
 
 export function getDefaultCurrentMonthId() {
   const now = new Date();
-  const slugByMonth = ["ocak", "subat", "mart", "nisan", "mayis", "haziran", "temmuz", "agustos", "eylul", "ekim", "kasim", "aralik"];
+  const slugByMonth = [
+    "ocak",
+    "subat",
+    "mart",
+    "nisan",
+    "mayis",
+    "haziran",
+    "temmuz",
+    "agustos",
+    "eylul",
+    "ekim",
+    "kasim",
+    "aralik",
+  ];
   return `${slugByMonth[now.getMonth()]}-${now.getFullYear()}`;
 }
 
-export function createSeasonMonths(startYear = 2025, currentMonthId = "mayis-2026") {
+export function createSeasonMonths(
+  startYear = 2025,
+  currentMonthId = "temmuz-2025",
+) {
   return MONTH_NAMES.map((name, index) => {
-    const year = index <= 4 ? startYear : startYear + 1;
+    const year = index <= 5 ? startYear : startYear + 1;
     const id = `${name}-${year}`;
-    const currentIndex = MONTH_NAMES.findIndex((monthName, monthIndex) => `${monthName}-${monthIndex <= 4 ? startYear : startYear + 1}` === currentMonthId);
+    const currentIndex = MONTH_NAMES.findIndex(
+      (monthName, monthIndex) =>
+        `${monthName}-${monthIndex <= 5 ? startYear : startYear + 1}` ===
+        currentMonthId,
+    );
     let status = "future";
     if (currentIndex >= 0) {
       if (index < currentIndex) status = "past";
@@ -58,15 +80,50 @@ export function createSeasonMonths(startYear = 2025, currentMonthId = "mayis-202
   });
 }
 
-export const MONTHS = createSeasonMonths(2025, "mayis-2026");
+export const MONTHS = createSeasonMonths(2025, "temmuz-2025");
 
 export const INITIAL_BRANDS = [
   { id: 1, name: "Apotemi", color: "Kırmızı", active: true },
-  { id: 2, name: "Hız ve Renk", color: "Mavi", active: true, maxDiscountRate: 50, defaultDiscountRate: 0 },
-  { id: 3, name: "Mozaik", color: "Mor", active: true, maxDiscountRate: 50, defaultDiscountRate: 0 },
-  { id: 4, name: "Ulti", color: "Siyah", active: true, maxDiscountRate: 50, defaultDiscountRate: 0 },
-  { id: 5, name: "Bilgi Sarmal", color: "Yeşil", active: true, maxDiscountRate: 50, defaultDiscountRate: 0 },
-  { id: 6, name: "Paraf", color: "Turuncu", active: true, maxDiscountRate: 50, defaultDiscountRate: 0 },
+  {
+    id: 2,
+    name: "Hız ve Renk",
+    color: "Mavi",
+    active: true,
+    maxDiscountRate: 50,
+    defaultDiscountRate: 0,
+  },
+  {
+    id: 3,
+    name: "Mozaik",
+    color: "Mor",
+    active: true,
+    maxDiscountRate: 50,
+    defaultDiscountRate: 0,
+  },
+  {
+    id: 4,
+    name: "Ulti",
+    color: "Siyah",
+    active: true,
+    maxDiscountRate: 50,
+    defaultDiscountRate: 0,
+  },
+  {
+    id: 5,
+    name: "Bilgi Sarmal",
+    color: "Yeşil",
+    active: true,
+    maxDiscountRate: 50,
+    defaultDiscountRate: 0,
+  },
+  {
+    id: 6,
+    name: "Paraf",
+    color: "Turuncu",
+    active: true,
+    maxDiscountRate: 50,
+    defaultDiscountRate: 0,
+  },
 ];
 
 export const INITIAL_CUSTOMERS = [
@@ -76,7 +133,18 @@ export const INITIAL_CUSTOMERS = [
     username: "abc-dershanesi",
     email: "demo@dershane.com",
     phone: "0555 000 00 00",
+    type: "Dershane",
     city: "İstanbul",
+    district: "Kadıköy",
+    address: "Kadıköy / İstanbul",
+    deliveryAddress: "Kadıköy / İstanbul",
+    billingAddress: "Kadıköy / İstanbul",
+    invoiceTitle: "Etki Dershanesi Eğitim Hizmetleri",
+    taxNumber: "1111111111",
+    taxOffice: "Kadıköy",
+    contactPerson: "Kurum yetkilisi",
+    contactPhone: "0555 000 00 00",
+    contactEmail: "demo@dershane.com",
     discountRate: 18,
     status: "Aktif",
   },
@@ -86,7 +154,18 @@ export const INITIAL_CUSTOMERS = [
     username: "fen-cebir",
     email: "fen-cebir@akademi.com",
     phone: "0555 111 11 11",
+    type: "Kurs",
     city: "Ankara",
+    district: "Çankaya",
+    address: "Çankaya / Ankara",
+    deliveryAddress: "Çankaya / Ankara",
+    billingAddress: "Çankaya / Ankara",
+    invoiceTitle: "Fen-Cebir Akademi",
+    taxNumber: "2222222222",
+    taxOffice: "Çankaya",
+    contactPerson: "Kurum yetkilisi",
+    contactPhone: "0555 111 11 11",
+    contactEmail: "fen-cebir@akademi.com",
     discountRate: 12,
     status: "Aktif",
   },
@@ -96,7 +175,18 @@ export const INITIAL_CUSTOMERS = [
     username: "başarı-kurs",
     email: "başarı@kurs.com",
     phone: "0555 222 22 22",
+    type: "Kurs",
     city: "Eskişehir",
+    district: "Odunpazarı",
+    address: "Odunpazarı / Eskişehir",
+    deliveryAddress: "Odunpazarı / Eskişehir",
+    billingAddress: "Odunpazarı / Eskişehir",
+    invoiceTitle: "Başarı Kurs Merkezi",
+    taxNumber: "3333333333",
+    taxOffice: "Odunpazarı",
+    contactPerson: "Kurum yetkilisi",
+    contactPhone: "0555 222 22 22",
+    contactEmail: "başarı@kurs.com",
     discountRate: 20,
     status: "Pasif",
   },
@@ -157,7 +247,8 @@ export const INITIAL_EXAMS = [
     visibility: "all",
     visibleCustomerIds: [],
     tags: ["7. Sınıf", "Kazanım", "Kurumsal"],
-    description: "7. sınıf öğrencileri için dönem sonu kazanım değerlendirme denemesi.",
+    description:
+      "7. sınıf öğrencileri için dönem sonu kazanım değerlendirme denemesi.",
     active: true,
   },
   {
@@ -282,7 +373,10 @@ export const INITIAL_ORDERS = [
     status: "Onaylandı",
     date: "14 Mart 2027",
     total: 3805,
-    logs: ["14 Mart 2027 - Sipariş oluşturuldu.", "14 Mart 2027 - Admin tarafından onaylandı."],
+    logs: [
+      "14 Mart 2027 - Sipariş oluşturuldu.",
+      "14 Mart 2027 - Admin tarafından onaylandı.",
+    ],
   },
   {
     id: "ORD-0999",
@@ -295,7 +389,10 @@ export const INITIAL_ORDERS = [
     status: "Teslim edildi",
     date: "02 Mart 2027",
     total: 1476,
-    logs: ["02 Mart 2027 - Sipariş oluşturuldu.", "03 Mart 2027 - Teslim edildi."],
+    logs: [
+      "02 Mart 2027 - Sipariş oluşturuldu.",
+      "03 Mart 2027 - Teslim edildi.",
+    ],
   },
 ];
 
@@ -304,21 +401,24 @@ export const INITIAL_ANNOUNCEMENTS = [
     id: 1,
     title: "Mart ayı denemeleri yayında",
     text: "Mart ayı TYT ve LGS denemeleri siparişe açılmıştır.",
-    imageUrl: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=900&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=900&q=80",
     active: true,
   },
   {
     id: 2,
     title: "Sipariş tarihi hatırlatması",
     text: "Siparişlerinizi kapanış tarihinden önce oluşturmayı unutmayın.",
-    imageUrl: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=900&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=900&q=80",
     active: true,
   },
   {
     id: 3,
     title: "Yeni kurumsal deneme fırsatları",
     text: "Seçili kurumlara özel kampanya ve deneme duyuruları bu alanda yayınlanır.",
-    imageUrl: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=900&q=80",
+    imageUrl:
+      "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=900&q=80",
     active: true,
   },
 ];
@@ -344,11 +444,23 @@ export const blankExam = {
 
 export const blankCustomer = {
   name: "",
+  type: "Dershane",
   username: "",
   email: "",
   phone: "",
   city: "",
+  district: "",
+  address: "",
+  deliveryAddress: "",
+  billingAddress: "",
+  invoiceTitle: "",
+  taxNumber: "",
+  taxOffice: "",
+  contactPerson: "",
+  contactPhone: "",
+  contactEmail: "",
   discountRate: 0,
+  note: "",
   status: "Aktif",
 };
 
@@ -361,11 +473,43 @@ export function getClassCategoryOptions(group) {
   return CLASS_CATEGORY_OPTIONS[group] || CLASS_CATEGORY_OPTIONS.Lise;
 }
 
-
 export const INITIAL_STAFF_USERS = [
-  { id: 1, name: "Han Kop", username: "admin", email: "admin@noxelera.app", phone: "0555 333 33 33", title: "Süper Admin", role: "admin", note: "Noxelera sistem sahibi. Depo dahil tüm modüllere erişebilir.", active: true, mustChangePassword: false },
-  { id: 2, name: "Depo Personeli", username: "personel", email: "personel@noxelera.app", phone: "0555 111 22 33", title: "Depo Personeli", role: "personnel", note: "Stok, raf ve sipariş hazırlama işlemlerinden sorumlu.", active: true, mustChangePassword: false },
-  { id: 3, name: "Dağıtıcı Kullanıcı", username: "dagitici", email: "dagitici@noxelera.app", phone: "0555 222 44 55", title: "Dağıtıcı", role: "distributor", note: "Hazırlanan siparişleri teslim eder.", active: true, mustChangePassword: false },
+  {
+    id: 1,
+    name: "Han Kop",
+    username: "admin",
+    email: "admin@noxelera.app",
+    phone: "0555 333 33 33",
+    title: "Süper Admin",
+    role: "admin",
+    note: "Noxelera sistem sahibi. Depo dahil tüm modüllere erişebilir.",
+    active: true,
+    mustChangePassword: false,
+  },
+  {
+    id: 2,
+    name: "Depo Personeli",
+    username: "personel",
+    email: "personel@noxelera.app",
+    phone: "0555 111 22 33",
+    title: "Depo Personeli",
+    role: "personnel",
+    note: "Stok, raf ve sipariş hazırlama işlemlerinden sorumlu.",
+    active: true,
+    mustChangePassword: false,
+  },
+  {
+    id: 3,
+    name: "Dağıtıcı Kullanıcı",
+    username: "dagitici",
+    email: "dagitici@noxelera.app",
+    phone: "0555 222 44 55",
+    title: "Dağıtıcı",
+    role: "distributor",
+    note: "Hazırlanan siparişleri teslim eder.",
+    active: true,
+    mustChangePassword: false,
+  },
 ];
 
 export const STAFF_ROLE_LABELS = {
@@ -376,28 +520,160 @@ export const STAFF_ROLE_LABELS = {
 
 export function generateTemporaryPassword() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  return Array.from(
+    { length: 8 },
+    () => chars[Math.floor(Math.random() * chars.length)],
+  ).join("");
 }
 
 export const INITIAL_WAREHOUSE = {
   shelves: [
-    { id: "shelf-a-1", code: "A-1", name: "A-1 Rafı", qrCode: "RAF-A-1", description: "TYT ve AYT denemeleri", status: "Aktif" },
-    { id: "shelf-a-2", code: "A-2", name: "A-2 Rafı", qrCode: "RAF-A-2", description: "LGS ve ortaokul denemeleri", status: "Aktif" },
-    { id: "shelf-b-1", code: "B-1", name: "B-1 Rafı", qrCode: "RAF-B-1", description: "Kitap stok alanı", status: "Aktif" },
-    { id: "shelf-c-1", code: "C-1", name: "C-1 Rafı", qrCode: "RAF-C-1", description: "Yedek ve kampanya ürünleri", status: "Aktif" },
+    {
+      id: "shelf-a-1",
+      code: "A-1",
+      name: "A-1 Rafı",
+      qrCode: "RAF-A-1",
+      description: "TYT ve AYT denemeleri",
+      status: "Aktif",
+    },
+    {
+      id: "shelf-a-2",
+      code: "A-2",
+      name: "A-2 Rafı",
+      qrCode: "RAF-A-2",
+      description: "LGS ve ortaokul denemeleri",
+      status: "Aktif",
+    },
+    {
+      id: "shelf-b-1",
+      code: "B-1",
+      name: "B-1 Rafı",
+      qrCode: "RAF-B-1",
+      description: "Kitap stok alanı",
+      status: "Aktif",
+    },
+    {
+      id: "shelf-c-1",
+      code: "C-1",
+      name: "C-1 Rafı",
+      qrCode: "RAF-C-1",
+      description: "Yedek ve kampanya ürünleri",
+      status: "Aktif",
+    },
   ],
   stockItems: [
-    { id: 1, type: "Deneme", name: "Apotemi TYT Genel Deneme", brand: "Apotemi", category: "TYT", barcode: "", barcodeA: "869000000001-A", barcodeB: "869000000001-B", qrCode: "QR-APO-TYT-001", shelfId: "shelf-a-1", quantity: 320, variants: { "A Sayısal": 100, "A Sözel": 100, "B Sayısal": 100, "B Sözel": 100 }, minStock: 20, status: "Aktif" },
-    { id: 2, type: "Deneme", name: "Hız ve Renk LGS Deneme", brand: "Hız ve Renk", category: "LGS", barcode: "", barcodeA: "869000000002-A", barcodeB: "869000000002-B", qrCode: "QR-HR-LGS-001", shelfId: "shelf-a-2", quantity: 210, variants: { "A Sayısal": 80, "A Sözel": 80, "B Sayısal": 70, "B Sözel": 70 }, minStock: 20, status: "Aktif" },
-    { id: 3, type: "Kitap", name: "TYT Matematik Soru Bankası", brand: "Noxelera", category: "TYT", barcode: "869000000003", qrCode: "QR-NOX-TYT-MAT", shelfId: "shelf-b-1", quantity: 95, minStock: 20, status: "Aktif" },
-    { id: 4, type: "Kitap", name: "AYT Edebiyat Soru Bankası", brand: "Noxelera", category: "AYT", barcode: "869000000004", qrCode: "QR-NOX-AYT-EDB", shelfId: "shelf-b-1", quantity: 18, minStock: 20, status: "Aktif" },
-    { id: 5, type: "Deneme", name: "Paraf 8. Sınıf LGS Deneme", brand: "Paraf", category: "LGS", barcode: "", barcodeA: "869000000005-A", barcodeB: "869000000005-B", qrCode: "QR-PAR-LGS-001", shelfId: "shelf-a-2", quantity: 72, variants: { "A Sayısal": 25, "A Sözel": 25, "B Sayısal": 18, "B Sözel": 18 }, minStock: 20, status: "Aktif" },
+    {
+      id: 1,
+      type: "Deneme",
+      name: "Apotemi TYT Genel Deneme",
+      brand: "Apotemi",
+      category: "TYT",
+      barcode: "",
+      barcodeA: "869000000001-A",
+      barcodeB: "869000000001-B",
+      qrCode: "QR-APO-TYT-001",
+      shelfId: "shelf-a-1",
+      quantity: 320,
+      variants: {
+        "A Sayısal": 100,
+        "A Sözel": 100,
+        "B Sayısal": 100,
+        "B Sözel": 100,
+      },
+      minStock: 20,
+      status: "Aktif",
+    },
+    {
+      id: 2,
+      type: "Deneme",
+      name: "Hız ve Renk LGS Deneme",
+      brand: "Hız ve Renk",
+      category: "LGS",
+      barcode: "",
+      barcodeA: "869000000002-A",
+      barcodeB: "869000000002-B",
+      qrCode: "QR-HR-LGS-001",
+      shelfId: "shelf-a-2",
+      quantity: 210,
+      variants: {
+        "A Sayısal": 80,
+        "A Sözel": 80,
+        "B Sayısal": 70,
+        "B Sözel": 70,
+      },
+      minStock: 20,
+      status: "Aktif",
+    },
+    {
+      id: 3,
+      type: "Kitap",
+      name: "TYT Matematik Soru Bankası",
+      brand: "Noxelera",
+      category: "TYT",
+      barcode: "869000000003",
+      qrCode: "QR-NOX-TYT-MAT",
+      shelfId: "shelf-b-1",
+      quantity: 95,
+      minStock: 20,
+      status: "Aktif",
+    },
+    {
+      id: 4,
+      type: "Kitap",
+      name: "AYT Edebiyat Soru Bankası",
+      brand: "Noxelera",
+      category: "AYT",
+      barcode: "869000000004",
+      qrCode: "QR-NOX-AYT-EDB",
+      shelfId: "shelf-b-1",
+      quantity: 18,
+      minStock: 20,
+      status: "Aktif",
+    },
+    {
+      id: 5,
+      type: "Deneme",
+      name: "Paraf 8. Sınıf LGS Deneme",
+      brand: "Paraf",
+      category: "LGS",
+      barcode: "",
+      barcodeA: "869000000005-A",
+      barcodeB: "869000000005-B",
+      qrCode: "QR-PAR-LGS-001",
+      shelfId: "shelf-a-2",
+      quantity: 72,
+      variants: {
+        "A Sayısal": 25,
+        "A Sözel": 25,
+        "B Sayısal": 18,
+        "B Sözel": 18,
+      },
+      minStock: 20,
+      status: "Aktif",
+    },
   ],
   distributorTasks: [
-    { id: 1, title: "Etki Dershanesi teslimatı", orderId: "ORD-1000", distributor: "Dağıtıcı 1", status: "Bekliyor", note: "LGS denemeleri teslim edilecek." },
+    {
+      id: 1,
+      title: "Etki Dershanesi teslimatı",
+      orderId: "ORD-1000",
+      distributor: "Dağıtıcı 1",
+      status: "Bekliyor",
+      note: "LGS denemeleri teslim edilecek.",
+    },
   ],
   stockMovements: [
-    { id: 1, type: "Stok", text: "Apotemi TYT Genel Deneme stok kaydı oluşturuldu.", date: "Bugün" },
-    { id: 2, type: "Raf", text: "A-1 rafı QR kaydıyla aktif edildi.", date: "Bugün" },
+    {
+      id: 1,
+      type: "Stok",
+      text: "Apotemi TYT Genel Deneme stok kaydı oluşturuldu.",
+      date: "Bugün",
+    },
+    {
+      id: 2,
+      type: "Raf",
+      text: "A-1 rafı QR kaydıyla aktif edildi.",
+      date: "Bugün",
+    },
   ],
 };

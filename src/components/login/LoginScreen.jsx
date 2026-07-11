@@ -11,7 +11,7 @@ const staffRoles = [
   { id: "distributor", label: "Dağıtıcı", icon: <Truck size={18} /> },
 ];
 
-export default function LoginScreen({ onLogin }) {
+export default function LoginScreen({ onLogin, staffUsers = [], warehouseUsers = [] }) {
   const [selectedLogin, setSelectedLogin] = useState(null);
   const [selectedStaffRole, setSelectedStaffRole] = useState("admin");
   const [customerEmail, setCustomerEmail] = useState("demo@dershane.com");
@@ -26,10 +26,59 @@ export default function LoginScreen({ onLogin }) {
     onLogin("customer");
   };
 
+  const normalizeRole = (role) => {
+    const value = String(role || "").toLowerCase();
+    if (["admin", "yonetici", "yönetici"].includes(value)) return "admin";
+    if (["yardimci_admin", "yardımcı_admin", "helper_admin", "assistant_admin", "yardimci", "yardımcı"].includes(value)) return "yardimci_admin";
+    if (["personnel", "personel", "staff"].includes(value)) return "personnel";
+    if (["distributor", "dagitici", "dağıtıcı", "delivery"].includes(value)) return "distributor";
+    return value || "personnel";
+  };
+
+  const matchesUser = (user, username) => {
+    const value = String(username || "").trim().toLowerCase();
+    return [user.username, user.email, user.name, user.phone].some((field) => String(field || "").trim().toLowerCase() === value);
+  };
+
+  const passwordOk = (user, password) => {
+    const value = String(password || "");
+    if (user?.password || user?.temporaryPassword) return value === String(user.password || user.temporaryPassword);
+    return ["123456", "admin123", "personel", "dagitici"].includes(value);
+  };
+
   const submitStaff = (event) => {
     event.preventDefault();
     setErrorText("");
-    onLogin(selectedStaffRole);
+    const username = staffUsername.trim();
+    const allWarehouseUsers = (warehouseUsers || []).filter((user) => user?.isActive !== false);
+    const allStaffUsers = (staffUsers || []).filter((user) => user?.active !== false);
+
+    if (selectedStaffRole === "admin") {
+      if ((username === "admin" || username === "noxelera") && staffPassword === "admin123") {
+        onLogin("admin", { id: "main-admin", name: "Noxelera Admin", role: "yonetici", username: "admin" });
+        return;
+      }
+      const helper = allWarehouseUsers.find((user) => normalizeRole(user.role) === "yardimci_admin" && matchesUser(user, username) && passwordOk(user, staffPassword));
+      if (helper) {
+        onLogin("yardimci_admin", helper);
+        return;
+      }
+      setErrorText("Admin bilgileri hatalı.");
+      return;
+    }
+
+    const expectedRole = selectedStaffRole === "personnel" ? "personnel" : "distributor";
+    const warehouseMatch = allWarehouseUsers.find((user) => normalizeRole(user.role) === expectedRole && matchesUser(user, username) && passwordOk(user, staffPassword));
+    const staffMatch = allStaffUsers.find((user) => normalizeRole(user.role) === expectedRole && matchesUser(user, username) && passwordOk(user, staffPassword));
+    if (warehouseMatch || staffMatch) {
+      onLogin(expectedRole, warehouseMatch || staffMatch);
+      return;
+    }
+    if ((expectedRole === "personnel" && username === "personel" && staffPassword === "personel") || (expectedRole === "distributor" && username === "dagitici" && staffPassword === "dagitici")) {
+      onLogin(expectedRole, { id: expectedRole, name: expectedRole === "personnel" ? "Depo Personeli" : "Dağıtıcı", role: expectedRole });
+      return;
+    }
+    setErrorText("Kullanıcı adı veya şifre hatalı.");
   };
 
   const loginCards = [
@@ -81,13 +130,13 @@ export default function LoginScreen({ onLogin }) {
               <form onSubmit={submitStaff} className="rounded-[2.2rem] bg-slate-950/95 p-6 text-white shadow-2xl ring-1 ring-white/10 backdrop-blur sm:p-8">
                 <div className="mb-6"><p className="text-sm font-black uppercase tracking-wide text-blue-300">Yönetim girişi</p><h2 className="mt-2 text-3xl font-black tracking-tight">Yetkili hesap</h2></div>
                 <div className="mb-5 grid grid-cols-3 gap-2 rounded-2xl bg-white/10 p-1 ring-1 ring-white/10">
-                  {staffRoles.map((role) => <button type="button" key={role.id} onClick={() => { setSelectedStaffRole(role.id); setStaffUsername(role.id === "admin" ? "admin" : role.id === "personnel" ? "personel" : "dagitici"); }} className={`flex items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-black transition ${selectedStaffRole === role.id ? "bg-white text-slate-950" : "text-slate-200 hover:bg-white/10"}`}>{role.icon}{role.label}</button>)}
+                  {staffRoles.map((role) => <button type="button" key={role.id} onClick={() => { setSelectedStaffRole(role.id); setStaffUsername(role.id === "admin" ? "admin" : role.id === "personnel" ? "personel" : "dagitici"); setStaffPassword(role.id === "admin" ? "admin123" : role.id === "personnel" ? "personel" : "dagitici"); }} className={`flex items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-black transition ${selectedStaffRole === role.id ? "bg-white text-slate-950" : "text-slate-200 hover:bg-white/10"}`}>{role.icon}{role.label}</button>)}
                 </div>
                 <div className="grid gap-4">
                   <label className="grid min-w-0 gap-2"><span className="text-xs font-black uppercase tracking-wide text-slate-200">Kullanıcı adı</span><input value={staffUsername} onChange={(e) => setStaffUsername(e.target.value)} className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-bold text-white outline-none focus:border-blue-300" /></label>
                   <label className="grid min-w-0 gap-2"><span className="text-xs font-black uppercase tracking-wide text-slate-200">Şifre</span><input type="password" value={staffPassword} onChange={(e) => setStaffPassword(e.target.value)} className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-bold text-white outline-none focus:border-blue-300" /></label>
                   {errorText && <p className="rounded-2xl bg-red-500/10 p-3 text-xs font-bold text-red-100 ring-1 ring-red-400/20">{errorText}</p>}
-                  <button type="submit" className="flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-blue-50 hover:shadow-lg">{staffRoles.find((role) => role.id === selectedStaffRole)?.label} Girişi Yap<ArrowRight size={18} /></button>
+                  <button type="submit" className="flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-blue-50 hover:shadow-lg">{selectedStaffRole === "admin" ? "Admin" : staffRoles.find((role) => role.id === selectedStaffRole)?.label} Girişi Yap<ArrowRight size={18} /></button>
                 </div>
               </form>
             )}

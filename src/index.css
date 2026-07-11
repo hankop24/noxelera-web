@@ -39,3 +39,9 @@ body {
   padding-top: 1px !important;
   transform: none !important;
 }
+
+/* Sidebar logo should never overflow into the brand text */
+aside .sidebar-logo-mark,
+aside [data-sidebar-logo='true'] {
+  overflow: hidden;
+}
